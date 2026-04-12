@@ -1,7 +1,17 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'marketplace-api.test',
+        port: '',
+        pathname: '/storage/**',
+      },
+      // Add production domain later
+    ],
+  },
 };
 
 export default nextConfig;
