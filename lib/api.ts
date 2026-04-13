@@ -6,19 +6,23 @@ const api = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  withCredentials: true, // Essential for Sanctum cookie auth
+  withCredentials: true,
 });
 
-// Interceptor: Fetch CSRF token before state-changing requests
-api.interceptors.request.use(async (config) => {
-  if (['post', 'put', 'patch', 'delete'].includes(config.method?.toLowerCase() || '')) {
+// Request interceptor: add Bearer token from localStorage
+api.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
     try {
-      // Sanctum's CSRF cookie endpoint
-      await axios.get('http://marketplace-api.test/sanctum/csrf-cookie', {
-        withCredentials: true,
-      });
-    } catch (error) {
-      console.error('Failed to fetch CSRF token', error);
+      const storage = localStorage.getItem('auth-storage');
+      if (storage) {
+        const parsed = JSON.parse(storage);
+        const token = parsed?.state?.token;
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to attach auth token', e);
     }
   }
   return config;

@@ -6,8 +6,9 @@ import { z } from 'zod';
 import { useCartStore } from '@/stores/cartStore';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import api from '@/lib/api'; // ✅ Use our pre-configured Axios instance
 
 const addressSchema = z.object({
   name: z.string().min(1, 'Name required'),
@@ -25,6 +26,7 @@ export default function CheckoutPage() {
   const { isAuthenticated, user } = useAuthStore();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
   const {
     register,
@@ -38,13 +40,15 @@ export default function CheckoutPage() {
     },
   });
 
-  if (items.length === 0) {
-    router.push('/cart');
-    return null;
-  }
+  useEffect(() => {
+    if (items.length === 0) {
+      router.push('/cart');
+    }
+  }, [items.length, router]);
 
   const onSubmit = async (data: AddressForm) => {
     setIsSubmitting(true);
+    setError('');
     try {
       const orderData = {
         shipping_address: {
@@ -60,21 +64,15 @@ export default function CheckoutPage() {
         })),
       };
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(orderData),
-      });
+      // Use Axios instead of fetch – credentials are automatically included
+      const response = await api.post('/orders', orderData);
+      const order = response.data;
 
-      if (!response.ok) throw new Error('Order failed');
-      
-      const order = await response.json();
       clearCart();
       router.push(`/order/${order.id}/payment`);
-    } catch (error) {
-      console.error(error);
-      alert('Failed to place order. Please try again.');
+    } catch (err: any) {
+      console.error('Order error:', err);
+      setError(err.response?.data?.message || 'Failed to place order. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -91,6 +89,7 @@ export default function CheckoutPage() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
       <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+      {error && <p className="text-red-500 mb-4">{error}</p>}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div>
           <h2 className="text-xl font-semibold mb-4">Shipping Address</h2>

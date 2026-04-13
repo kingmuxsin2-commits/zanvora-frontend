@@ -18,6 +18,16 @@ export default function Header() {
           </Link>
           {isAuthenticated ? (
             <>
+              {user?.role === 'admin' && (
+                <Link href="/admin" className="text-indigo-600 font-medium">
+                  Admin
+                </Link>
+              )}
+              {user?.role === 'supplier' && (
+                <Link href="/supplier" className="text-indigo-600 font-medium">
+                  Supplier Portal
+                </Link>
+              )}
               <span className="text-gray-600">Hi, {user?.name}</span>
               <button onClick={logout} className="text-red-600 hover:underline">
                 Logout
