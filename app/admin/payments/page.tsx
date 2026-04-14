@@ -8,6 +8,7 @@ interface Order {
   order_number: string;
   total_amount: string | number;
   payment_reference: string;
+  payment_reference_override: string | null; // new field
   payment_status: string;
   payment_claimed_at: string | null;
   admin_checking_at: string | null;
@@ -22,6 +23,9 @@ export default function AdminPaymentsPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<number | null>(null);
+  const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
+  const [overrideReference, setOverrideReference] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const fetchOrders = () => {
     api.get('/admin/orders/pending-payment')
@@ -37,7 +41,6 @@ export default function AdminPaymentsPage() {
   }, []);
 
   const handleMarkChecking = async (orderId: number) => {
-    // Optimistically update UI
     setOrders(prevOrders => 
       prevOrders.map(order => 
         order.id === orderId 
@@ -49,7 +52,6 @@ export default function AdminPaymentsPage() {
     try {
       await api.post(`/admin/orders/${orderId}/mark-checking`);
     } catch (error) {
-      // Revert on failure by refetching
       fetchOrders();
     }
   };
@@ -58,7 +60,6 @@ export default function AdminPaymentsPage() {
     setProcessing(orderId);
     try {
       await api.post(`/admin/orders/${orderId}/confirm-payment`);
-      // Remove from list after confirmation
       setOrders(prev => prev.filter(o => o.id !== orderId));
     } catch (error) {
       console.error('Failed to confirm payment:', error);
@@ -71,12 +72,28 @@ export default function AdminPaymentsPage() {
     setProcessing(orderId);
     try {
       await api.post(`/admin/orders/${orderId}/reject-payment`);
-      // Remove from list after rejection
       setOrders(prev => prev.filter(o => o.id !== orderId));
     } catch (error) {
       console.error('Failed to reject order:', error);
     } finally {
       setProcessing(null);
+    }
+  };
+
+  const handleSaveReference = async (orderId: number) => {
+    if (!overrideReference.trim()) return;
+    setSaving(true);
+    try {
+      await api.post(`/admin/orders/${orderId}/payment-reference`, {
+        payment_reference_override: overrideReference,
+      });
+      fetchOrders();
+      setEditingOrderId(null);
+      setOverrideReference('');
+    } catch {
+      alert('Failed to save reference');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -109,7 +126,7 @@ export default function AdminPaymentsPage() {
           <p className="text-gray-500">No pending payments</p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-lg shadow overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b">
               <tr>
@@ -139,7 +156,51 @@ export default function AdminPaymentsPage() {
                       📋 Copy
                     </button>
                   </td>
-                  <td className="p-4 font-mono text-sm">{order.payment_reference}</td>
+                  <td className="p-4 font-mono text-sm">
+                    {editingOrderId === order.id ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={overrideReference}
+                          onChange={(e) => setOverrideReference(e.target.value)}
+                          className="w-32 px-2 py-1 border rounded text-sm"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveReference(order.id);
+                            if (e.key === 'Escape') setEditingOrderId(null);
+                          }}
+                          disabled={saving}
+                        />
+                        <button
+                          onClick={() => handleSaveReference(order.id)}
+                          disabled={saving}
+                          className="text-green-600 hover:underline text-xs"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => setEditingOrderId(null)}
+                          className="text-gray-500 hover:underline text-xs"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span>{order.payment_reference_override || order.payment_reference}</span>
+                        <button
+                          onClick={() => {
+                            setEditingOrderId(order.id);
+                            setOverrideReference(order.payment_reference_override || order.payment_reference);
+                          }}
+                          className="text-indigo-600 hover:underline text-xs"
+                          title="Edit reference"
+                        >
+                          ✏️
+                        </button>
+                      </div>
+                    )}
+                  </td>
                   <td className="p-4">
                     {order.payment_claimed_at ? (
                       <span className="text-green-600">✓ {new Date(order.payment_claimed_at).toLocaleTimeString()}</span>
