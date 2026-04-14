@@ -6,9 +6,9 @@ import { z } from 'zod';
 import { useCartStore } from '@/stores/cartStore';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import api from '@/lib/api'; // ✅ Use our pre-configured Axios instance
+import api from '@/lib/api';
 
 const addressSchema = z.object({
   name: z.string().min(1, 'Name required'),
@@ -40,12 +40,6 @@ export default function CheckoutPage() {
     },
   });
 
-  useEffect(() => {
-    if (items.length === 0) {
-      router.push('/cart');
-    }
-  }, [items.length, router]);
-
   const onSubmit = async (data: AddressForm) => {
     setIsSubmitting(true);
     setError('');
@@ -64,19 +58,36 @@ export default function CheckoutPage() {
         })),
       };
 
-      // Use Axios instead of fetch – credentials are automatically included
       const response = await api.post('/orders', orderData);
       const order = response.data;
 
+      if (!order.id) {
+        throw new Error('Order created but no ID returned');
+      }
+
+      // Clear cart first, then navigate immediately
       clearCart();
-      router.push(`/order/${order.id}/payment`);
+      window.location.href = `/order/payment?orderId=${order.id}`;
     } catch (err: any) {
       console.error('Order error:', err);
-      setError(err.response?.data?.message || 'Failed to place order. Please try again.');
+      setError(err.response?.data?.message || err.message || 'Failed to place order.');
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // If cart is empty, show a message (but don't auto-redirect)
+  if (items.length === 0) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <h1 className="text-2xl font-bold mb-4">Your cart is empty</h1>
+        <p className="text-gray-600 mb-6">Add some products before checking out.</p>
+        <Link href="/" className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+          Continue Shopping
+        </Link>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (

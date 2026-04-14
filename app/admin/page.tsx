@@ -21,18 +21,23 @@ export default function AdminDashboard() {
       api.get('/admin/products/pending'),
       api.get('/admin/orders/pending-payment'),
     ])
-      .then(([suppliers, products, orders]) => {
+      .then(([suppliersRes, productsRes, ordersRes]) => {
+        const suppliersData = suppliersRes.data.data || suppliersRes.data || [];
+        const productsData = productsRes.data.data || productsRes.data || [];
+        const ordersData = ordersRes.data.data || ordersRes.data || [];
+        
         setStats({
-          pendingSuppliers: suppliers.data.meta?.total || suppliers.data.length || 0,
-          pendingProducts: products.data.meta?.total || products.data.length || 0,
-          pendingPayments: orders.data.meta?.total || orders.data.length || 0,
-          totalOrders: 0, // We'll add later
+          pendingSuppliers: Array.isArray(suppliersData) ? suppliersData.length : 0,
+          pendingProducts: Array.isArray(productsData) ? productsData.length : 0,
+          pendingPayments: Array.isArray(ordersData) ? ordersData.length : 0,
+          totalOrders: 0,
         });
       })
+      .catch(err => console.error('Failed to fetch admin stats:', err))
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div className="p-8">Loading...</div>;
 
   return (
     <div>
@@ -81,7 +86,12 @@ export default function AdminDashboard() {
   );
 }
 
-function StatCard({ title, value, href, color }: any) {
+function StatCard({ title, value, href, color }: { 
+  title: string; 
+  value: number; 
+  href: string; 
+  color: 'blue' | 'green' | 'yellow' | 'purple';
+}) {
   const colorClasses: Record<string, string> = {
     blue: 'bg-blue-100 text-blue-800',
     green: 'bg-green-100 text-green-800',
@@ -92,17 +102,24 @@ function StatCard({ title, value, href, color }: any) {
   return (
     <Link href={href} className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition">
       <h3 className="text-gray-500 text-sm">{title}</h3>
-      <p className={`text-3xl font-bold ${colorClasses[color].split(' ')[1]}`}>{value}</p>
+      <p className={`text-3xl font-bold ${colorClasses[color]?.split(' ')[1] || 'text-gray-800'}`}>
+        {value}
+      </p>
     </Link>
   );
 }
 
-function RecentActivity({ title, endpoint, fields }: any) {
-  const [items, setItems] = useState([]);
+function RecentActivity({ title, endpoint, fields }: { 
+  title: string; 
+  endpoint: string; 
+  fields: string[];
+}) {
+  const [items, setItems] = useState<any[]>([]);
   
   useEffect(() => {
     api.get(endpoint).then(res => {
-      setItems(res.data.data || res.data.slice(0, 5));
+      const data = res.data.data || res.data || [];
+      setItems(Array.isArray(data) ? data.slice(0, 5) : []);
     });
   }, [endpoint]);
 
@@ -115,9 +132,9 @@ function RecentActivity({ title, endpoint, fields }: any) {
         <ul className="space-y-2">
           {items.slice(0, 5).map((item: any) => (
             <li key={item.id} className="flex justify-between text-sm">
-              <span>{item[fields[0]] || item.user?.name}</span>
+              <span>{item[fields[0]] || item.user?.name || '—'}</span>
               <span className="text-gray-500">
-                {new Date(item[fields[1]]).toLocaleDateString()}
+                {item[fields[1]] ? new Date(item[fields[1]]).toLocaleDateString() : '—'}
               </span>
             </li>
           ))}

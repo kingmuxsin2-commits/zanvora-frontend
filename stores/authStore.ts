@@ -2,17 +2,14 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { login as apiLogin, register as apiRegister, logout as apiLogout, User } from '@/lib/api/auth';
 
-interface LoginResponse {
-  user: User;
-  token: string;
-}
-
 interface AuthState {
   user: User | null;
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<LoginResponse>;
+  hasHydrated: boolean;
+  setHasHydrated: (state: boolean) => void;
+  login: (email: string, password: string) => Promise<void>;
   register: (data: any) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -24,18 +21,16 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       isLoading: false,
       isAuthenticated: false,
+      hasHydrated: false,
+      setHasHydrated: (state) => set({ hasHydrated: state }),
 
       login: async (email, password) => {
         set({ isLoading: true });
         try {
           const response = await apiLogin({ email, password });
-          console.log('Storing token:', response.token);
-
           localStorage.setItem('auth_token', response.token);
           localStorage.setItem('auth_user', JSON.stringify(response.user));
-
           set({ user: response.user, token: response.token, isAuthenticated: true });
-          return response;
         } finally {
           set({ isLoading: false });
         }
@@ -45,6 +40,8 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           const response = await apiRegister(data);
+          localStorage.setItem('auth_token', response.token);
+          localStorage.setItem('auth_user', JSON.stringify(response.user));
           set({ user: response.user, token: response.token, isAuthenticated: true });
         } finally {
           set({ isLoading: false });
@@ -52,15 +49,24 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: async () => {
-        await apiLogout();
+        try {
+          await apiLogout();
+        } catch (e) {
+          // Ignore API errors on logout
+        }
+        // Clear store state
         set({ user: null, token: null, isAuthenticated: false });
+        // Clear all auth-related localStorage
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_user');
+        localStorage.removeItem('auth-storage'); // Clear Zustand persist cache
       },
     }),
     {
       name: 'auth-storage',
-      partialize: (state) => ({ user: state.user, token: state.token }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );
