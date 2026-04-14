@@ -8,7 +8,7 @@ interface Order {
   order_number: string;
   total_amount: string | number;
   payment_reference: string;
-  payment_reference_override: string | null; // new field
+  payment_reference_override: string | null;
   payment_status: string;
   payment_claimed_at: string | null;
   admin_checking_at: string | null;
@@ -26,6 +26,13 @@ export default function AdminPaymentsPage() {
   const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
   const [overrideReference, setOverrideReference] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // Credit modal states
+  const [showCreditModal, setShowCreditModal] = useState(false);
+  const [selectedOrderForCredit, setSelectedOrderForCredit] = useState<Order | null>(null);
+  const [creditAmount, setCreditAmount] = useState('');
+  const [creditReason, setCreditReason] = useState('');
+  const [issuingCredit, setIssuingCredit] = useState(false);
 
   const fetchOrders = () => {
     api.get('/admin/orders/pending-payment')
@@ -94,6 +101,26 @@ export default function AdminPaymentsPage() {
       alert('Failed to save reference');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleIssueCredit = async () => {
+    if (!selectedOrderForCredit || !creditAmount || !creditReason) return;
+    setIssuingCredit(true);
+    try {
+      await api.post(`/admin/orders/${selectedOrderForCredit.id}/credits`, {
+        amount: parseFloat(creditAmount),
+        reason: creditReason,
+      });
+      alert('Credit issued successfully');
+      setShowCreditModal(false);
+      setSelectedOrderForCredit(null);
+      setCreditAmount('');
+      setCreditReason('');
+    } catch {
+      alert('Failed to issue credit');
+    } finally {
+      setIssuingCredit(false);
     }
   };
 
@@ -209,7 +236,7 @@ export default function AdminPaymentsPage() {
                     )}
                   </td>
                   <td className="p-4">
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {!order.admin_checking_at && (
                         <button
                           onClick={() => handleMarkChecking(order.id)}
@@ -232,12 +259,74 @@ export default function AdminPaymentsPage() {
                       >
                         Reject
                       </button>
+                      <button
+                        onClick={() => {
+                          setSelectedOrderForCredit(order);
+                          setShowCreditModal(true);
+                        }}
+                        className="px-3 py-1 bg-purple-100 text-purple-700 rounded text-sm hover:bg-purple-200"
+                      >
+                        Credit
+                      </button>
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Credit Modal */}
+      {showCreditModal && selectedOrderForCredit && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">
+              Issue Credit for Order #{selectedOrderForCredit.order_number}
+            </h2>
+            <p className="mb-2">Customer: {selectedOrderForCredit.customer.name}</p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Amount ($)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={creditAmount}
+                  onChange={e => setCreditAmount(e.target.value)}
+                  className="w-full px-3 py-2 border rounded"
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Reason</label>
+                <textarea
+                  value={creditReason}
+                  onChange={e => setCreditReason(e.target.value)}
+                  className="w-full px-3 py-2 border rounded"
+                  rows={3}
+                  placeholder="e.g., Damaged item, goodwill gesture"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowCreditModal(false);
+                  setSelectedOrderForCredit(null);
+                }}
+                className="px-4 py-2 border rounded hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleIssueCredit}
+                disabled={issuingCredit}
+                className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+              >
+                {issuingCredit ? 'Issuing...' : 'Issue Credit'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

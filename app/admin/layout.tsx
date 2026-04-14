@@ -11,7 +11,8 @@ import {
   ShoppingCart, 
   CreditCard,
   LogOut,
-  BarChart3
+  BarChart3,
+  Percent
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -53,6 +54,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </Link>
           <Link href="/admin/payments" className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
             <CreditCard size={20} /> Payments
+          </Link>
+          <Link href="/admin/commission" className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
+            <Percent size={20} /> Commission
           </Link>
           <Link href="/admin/reports" className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
             <BarChart3 size={20} /> Reports

@@ -10,7 +10,8 @@ import {
   ShoppingCart, 
   BarChart3,
   LogOut,
-  Store
+  Store,
+  HelpCircle
 } from 'lucide-react';
 
 export default function SupplierLayout({ children }: { children: React.ReactNode }) {
@@ -53,6 +54,9 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
           </Link>
           <Link href="/supplier/store" className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
             <Store size={20} /> Store Settings
+          </Link>
+          <Link href="/supplier/guide" className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
+            <HelpCircle size={20} /> Guide
           </Link>
           <button 
             onClick={logout} 
