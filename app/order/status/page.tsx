@@ -126,11 +126,55 @@ export default function OrderStatusPage() {
         {order.fulfillments.map(f => (
           <div key={f.id} className="border p-4 rounded">
             <p className="font-medium">{f.supplier.business_name}</p>
-            <p className="text-sm text-gray-600">Status: {f.status}</p>
-            {f.tracking_number && (
-              <p className="text-sm">
-                Tracking: {f.tracking_number} ({f.carrier})
-              </p>
+            <p className="text-sm text-gray-600">
+              Status: <span className="capitalize">{f.status.replace('_', ' ')}</span>
+            </p>
+            {f.status === 'shipped' && f.tracking_number && (
+              <div className="mt-2 p-3 bg-blue-50 rounded text-sm">
+                <p className="font-medium">📦 Tracking Information</p>
+                <p>Carrier: {f.carrier}</p>
+                <p>Tracking Number: <span className="font-mono">{f.tracking_number}</span></p>
+                {f.carrier === 'UPS' && (
+                  <a
+                    href={`https://www.ups.com/track?tracknum=${f.tracking_number}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-indigo-600 hover:underline text-xs"
+                  >
+                    Track on UPS →
+                  </a>
+                )}
+                {f.carrier === 'FedEx' && (
+                  <a
+                    href={`https://www.fedex.com/fedextrack/?trknbr=${f.tracking_number}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-indigo-600 hover:underline text-xs"
+                  >
+                    Track on FedEx →
+                  </a>
+                )}
+                {f.carrier === 'USPS' && (
+                  <a
+                    href={`https://tools.usps.com/go/TrackConfirmAction?tLabels=${f.tracking_number}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-indigo-600 hover:underline text-xs"
+                  >
+                    Track on USPS →
+                  </a>
+                )}
+                {f.carrier === 'DHL' && (
+                  <a
+                    href={`https://www.dhl.com/en/express/tracking.html?AWB=${f.tracking_number}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-indigo-600 hover:underline text-xs"
+                  >
+                    Track on DHL →
+                  </a>
+                )}
+              </div>
             )}
           </div>
         ))}
