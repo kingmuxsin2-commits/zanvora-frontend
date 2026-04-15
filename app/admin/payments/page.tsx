@@ -142,7 +142,7 @@ export default function AdminPaymentsPage() {
         <h1 className="text-2xl font-bold">Pending Payment Verification</h1>
         <button
           onClick={fetchOrders}
-          className="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200"
+          className="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200 text-sm"
         >
           Refresh
         </button>
@@ -154,43 +154,43 @@ export default function AdminPaymentsPage() {
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="text-left p-4">Order #</th>
-                <th className="text-left p-4">Customer</th>
-                <th className="text-left p-4">Amount</th>
-                <th className="text-left p-4">Reference</th>
-                <th className="text-left p-4">Claimed</th>
-                <th className="text-left p-4">Actions</th>
+                <th className="text-left p-2 md:p-4">Order #</th>
+                <th className="text-left p-2 md:p-4">Customer</th>
+                <th className="text-left p-2 md:p-4">Amount</th>
+                <th className="text-left p-2 md:p-4">Reference</th>
+                <th className="text-left p-2 md:p-4">Claimed</th>
+                <th className="text-left p-2 md:p-4">Actions</th>
               </tr>
             </thead>
             <tbody>
               {orders.map(order => (
                 <tr key={order.id} className="border-b hover:bg-gray-50">
-                  <td className="p-4 font-mono text-sm">{order.order_number}</td>
-                  <td className="p-4">
+                  <td className="p-2 md:p-4 font-mono text-sm">{order.order_number}</td>
+                  <td className="p-2 md:p-4">
                     {order.customer.name}
                     <br />
-                    <span className="text-sm text-gray-500">{order.customer.phone}</span>
+                    <span className="text-xs md:text-sm text-gray-500">{order.customer.phone}</span>
                   </td>
-                  <td className="p-4">
-                    <span className="font-bold">${formatAmount(order.total_amount)}</span>
+                  <td className="p-2 md:p-4">
+                    <span className="font-bold text-sm">${formatAmount(order.total_amount)}</span>
                     <button
                       onClick={() => copyAmount(order.total_amount)}
-                      className="ml-2 text-indigo-600 text-sm hover:underline"
+                      className="ml-2 text-indigo-600 text-xs hover:underline"
                     >
                       📋 Copy
                     </button>
                   </td>
-                  <td className="p-4 font-mono text-sm">
+                  <td className="p-2 md:p-4 font-mono text-sm">
                     {editingOrderId === order.id ? (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 md:gap-2">
                         <input
                           type="text"
                           value={overrideReference}
                           onChange={(e) => setOverrideReference(e.target.value)}
-                          className="w-32 px-2 py-1 border rounded text-sm"
+                          className="w-24 md:w-32 px-1 md:px-2 py-1 border rounded text-xs md:text-sm"
                           autoFocus
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') handleSaveReference(order.id);
@@ -213,8 +213,8 @@ export default function AdminPaymentsPage() {
                         </button>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2">
-                        <span>{order.payment_reference_override || order.payment_reference}</span>
+                      <div className="flex items-center gap-1 md:gap-2">
+                        <span className="text-xs md:text-sm">{order.payment_reference_override || order.payment_reference}</span>
                         <button
                           onClick={() => {
                             setEditingOrderId(order.id);
@@ -228,19 +228,19 @@ export default function AdminPaymentsPage() {
                       </div>
                     )}
                   </td>
-                  <td className="p-4">
+                  <td className="p-2 md:p-4">
                     {order.payment_claimed_at ? (
-                      <span className="text-green-600">✓ {new Date(order.payment_claimed_at).toLocaleTimeString()}</span>
+                      <span className="text-green-600 text-xs md:text-sm">✓ {new Date(order.payment_claimed_at).toLocaleTimeString()}</span>
                     ) : (
-                      <span className="text-gray-400">—</span>
+                      <span className="text-gray-400 text-xs">—</span>
                     )}
                   </td>
-                  <td className="p-4">
-                    <div className="flex flex-wrap gap-2">
+                  <td className="p-2 md:p-4">
+                    <div className="flex flex-wrap gap-1 md:gap-2">
                       {!order.admin_checking_at && (
                         <button
                           onClick={() => handleMarkChecking(order.id)}
-                          className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200"
+                          className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs md:text-sm hover:bg-blue-200"
                         >
                           I'm Checking
                         </button>
@@ -248,14 +248,14 @@ export default function AdminPaymentsPage() {
                       <button
                         onClick={() => handleConfirm(order.id)}
                         disabled={processing === order.id}
-                        className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200 disabled:opacity-50"
+                        className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs md:text-sm hover:bg-green-200 disabled:opacity-50"
                       >
                         Confirm
                       </button>
                       <button
                         onClick={() => handleReject(order.id)}
                         disabled={processing === order.id}
-                        className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 disabled:opacity-50"
+                        className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs md:text-sm hover:bg-red-200 disabled:opacity-50"
                       >
                         Reject
                       </button>
@@ -264,7 +264,7 @@ export default function AdminPaymentsPage() {
                           setSelectedOrderForCredit(order);
                           setShowCreditModal(true);
                         }}
-                        className="px-3 py-1 bg-purple-100 text-purple-700 rounded text-sm hover:bg-purple-200"
+                        className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs md:text-sm hover:bg-purple-200"
                       >
                         Credit
                       </button>
@@ -279,8 +279,8 @@ export default function AdminPaymentsPage() {
 
       {/* Credit Modal */}
       {showCreditModal && selectedOrderForCredit && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-full max-w-md">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-4 md:p-6 rounded-lg w-full max-w-md">
             <h2 className="text-xl font-bold mb-4">
               Issue Credit for Order #{selectedOrderForCredit.order_number}
             </h2>
@@ -314,14 +314,14 @@ export default function AdminPaymentsPage() {
                   setShowCreditModal(false);
                   setSelectedOrderForCredit(null);
                 }}
-                className="px-4 py-2 border rounded hover:bg-gray-50"
+                className="px-4 py-2 border rounded hover:bg-gray-50 text-sm"
               >
                 Cancel
               </button>
               <button
                 onClick={handleIssueCredit}
                 disabled={issuingCredit}
-                className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+                className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50 text-sm"
               >
                 {issuingCredit ? 'Issuing...' : 'Issue Credit'}
               </button>
