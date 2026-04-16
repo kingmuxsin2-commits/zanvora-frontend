@@ -16,21 +16,14 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      api.get('/admin/suppliers/pending'),
-      api.get('/admin/products/pending'),
-      api.get('/admin/orders/pending-payment'),
-    ])
-      .then(([suppliersRes, productsRes, ordersRes]) => {
-        const suppliersData = suppliersRes.data.data || suppliersRes.data || [];
-        const productsData = productsRes.data.data || productsRes.data || [];
-        const ordersData = ordersRes.data.data || ordersRes.data || [];
-        
+    api.get('/admin/dashboard/stats')
+      .then(res => {
+        const data = res.data;
         setStats({
-          pendingSuppliers: Array.isArray(suppliersData) ? suppliersData.length : 0,
-          pendingProducts: Array.isArray(productsData) ? productsData.length : 0,
-          pendingPayments: Array.isArray(ordersData) ? ordersData.length : 0,
-          totalOrders: 0,
+          pendingSuppliers: data.pendingSuppliers || 0,
+          pendingProducts: data.pendingProducts || 0,
+          pendingPayments: data.pendingPayments || 0,
+          totalOrders: data.totalOrders || 0,
         });
       })
       .catch(err => console.error('Failed to fetch admin stats:', err))

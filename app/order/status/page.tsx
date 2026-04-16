@@ -80,7 +80,8 @@ export default function OrderStatusPage() {
         Placed on {new Date(order.created_at).toLocaleDateString()}
       </p>
       
-      <div className="mb-8">
+      {/* Horizontal Timeline (Desktop only) */}
+      <div className="hidden md:block mb-8">
         <div className="relative flex justify-between">
           {statusSteps.map((step, idx) => (
             <div key={step.key} className="flex flex-col items-center">
@@ -95,6 +96,32 @@ export default function OrderStatusPage() {
         </div>
       </div>
 
+      {/* Vertical List (Mobile only) */}
+      <div className="md:hidden mb-6 bg-gray-50 rounded-lg p-4">
+        <h2 className="font-semibold mb-3">Order Progress</h2>
+        <ol className="space-y-2">
+          {statusSteps.map((step, idx) => {
+            const isCompleted = idx < currentStepIndex;
+            const isCurrent = idx === currentStepIndex;
+            return (
+              <li key={step.key} className="flex items-start gap-3">
+                <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-sm ${
+                  isCompleted ? 'bg-indigo-600 text-white' :
+                  isCurrent ? 'bg-indigo-100 text-indigo-700 border-2 border-indigo-600' :
+                  'bg-gray-200 text-gray-500'
+                }`}>
+                  {isCompleted ? '✓' : idx + 1}
+                </div>
+                <span className={`${isCurrent ? 'font-medium text-indigo-700' : 'text-gray-600'}`}>
+                  {step.label}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+
+      {/* Payment Status */}
       <div className="bg-gray-50 p-4 rounded-lg mb-6">
         <h2 className="font-semibold mb-2">Payment Status</h2>
         {order.payment_status === 'pending_manual' && (
@@ -121,6 +148,7 @@ export default function OrderStatusPage() {
         )}
       </div>
 
+      {/* Shipments */}
       <div className="space-y-4">
         <h2 className="font-semibold">Shipments</h2>
         {order.fulfillments.map(f => (

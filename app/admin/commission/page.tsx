@@ -42,8 +42,9 @@ export default function CommissionPage() {
       await api.put(`/admin/commission-tiers/${editingId}`, editForm);
       fetchTiers();
       setEditingId(null);
-    } catch {
-      alert('Failed to save');
+    } catch (err: any) {
+      const message = err.response?.data?.errors?.min_price?.[0] || 'Failed to save';
+      alert(message);
     } finally {
       setSaving(false);
     }
@@ -66,8 +67,9 @@ export default function CommissionPage() {
       fetchTiers();
       setShowAdd(false);
       setNewTier({ min_price: 0, max_price: 0, percentage: 0, is_active: true });
-    } catch {
-      alert('Failed to create');
+    } catch (err: any) {
+      const message = err.response?.data?.errors?.min_price?.[0] || 'Failed to create';
+      alert(message);
     } finally {
       setSaving(false);
     }

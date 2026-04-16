@@ -9,6 +9,7 @@ interface SupplierPayout {
   email: string;
   payment_details: any;
   total_owed: number;
+  paid: boolean; // ✅ new field from backend
 }
 
 interface PayoutReport {
@@ -24,6 +25,8 @@ export default function AdminReportsPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [processing, setProcessing] = useState<number | null>(null);
+  // Track which suppliers have been marked as paid (optimistic UI)
+  const [paidSuppliers, setPaidSuppliers] = useState<Set<number>>(new Set());
 
   const fetchReport = (start?: string, end?: string) => {
     setLoading(true);
@@ -32,7 +35,12 @@ export default function AdminReportsPage() {
     if (end) params.append('end_date', end);
 
     api.get(`/admin/reports/payout?${params}`)
-      .then((res: { data: PayoutReport }) => setReport(res.data))
+      .then((res: { data: PayoutReport }) => {
+        setReport(res.data);
+        // Sync paidSuppliers with backend data
+        const paidIds = res.data.suppliers.filter(s => s.paid).map(s => s.id);
+        setPaidSuppliers(new Set(paidIds));
+      })
       .finally(() => setLoading(false));
   };
 
@@ -49,9 +57,9 @@ export default function AdminReportsPage() {
     setProcessing(supplierId);
     try {
       await api.post(`/admin/suppliers/${supplierId}/mark-paid`, { amount });
-      alert(`Marked as paid: $${amount.toFixed(2)}`);
-      // Refresh report
-      fetchReport(startDate, endDate);
+      // Optimistically update UI
+      setPaidSuppliers(prev => new Set(prev).add(supplierId));
+      // No full refresh needed – the total owed remains unchanged
     } catch (error) {
       alert('Failed to mark as paid');
     } finally {
@@ -118,27 +126,34 @@ export default function AdminReportsPage() {
                     </td>
                   </tr>
                 ) : (
-                  report.suppliers.map(s => (
-                    <tr key={s.id} className="border-b hover:bg-gray-50">
-                      <td className="p-4 font-medium">{s.business_name}</td>
-                      <td className="p-4">{s.email}</td>
-                      <td className="p-4">
-                        {s.payment_details?.paypal_email || s.payment_details?.venmo_handle || '—'}
-                      </td>
-                      <td className="p-4 text-right font-bold">
-                        ${s.total_owed.toFixed(2)}
-                      </td>
-                      <td className="p-4 text-center">
-                        <button
-                          onClick={() => handleMarkPaid(s.id, s.total_owed)}
-                          disabled={processing === s.id}
-                          className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200 disabled:opacity-50"
-                        >
-                          {processing === s.id ? 'Processing...' : 'Mark as Paid'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                  report.suppliers.map(s => {
+                    const isPaid = paidSuppliers.has(s.id);
+                    return (
+                      <tr key={s.id} className="border-b hover:bg-gray-50">
+                        <td className="p-4 font-medium">{s.business_name}</td>
+                        <td className="p-4">{s.email}</td>
+                        <td className="p-4">
+                          {s.payment_details?.paypal_email || s.payment_details?.venmo_handle || '—'}
+                        </td>
+                        <td className="p-4 text-right font-bold">
+                          ${s.total_owed.toFixed(2)}
+                        </td>
+                        <td className="p-4 text-center">
+                          <button
+                            onClick={() => handleMarkPaid(s.id, s.total_owed)}
+                            disabled={isPaid || processing === s.id}
+                            className={`px-3 py-1 rounded text-sm ${
+                              isPaid
+                                ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                                : 'bg-green-100 text-green-700 hover:bg-green-200'
+                            } disabled:opacity-50`}
+                          >
+                            {isPaid ? 'Paid ✓' : processing === s.id ? 'Processing...' : 'Mark as Paid'}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
               <tfoot className="bg-gray-50 border-t">
