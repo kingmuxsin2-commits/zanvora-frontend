@@ -1,16 +1,25 @@
 import api from '../api';
 
+export interface Supplier {
+  id: number;
+  business_name: string;
+  is_approved: boolean;
+  address: string | null;
+  shipping_flat_fee: string | number | null;
+  payment_details: {
+    paypal_email?: string;
+    venmo_handle?: string;
+    bank_details?: string;
+  } | null;
+}
+
 export interface User {
   id: number;
   name: string;
   email: string;
   phone: string;
   role: 'customer' | 'supplier' | 'admin' | 'staff';
-  supplier?: {
-    id: number;
-    business_name: string;
-    is_approved: boolean;
-  };
+  supplier?: Supplier;
 }
 
 export interface LoginCredentials {
