@@ -1,12 +1,12 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useCartStore } from '@/stores/cartStore';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
-import { useState } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api';
 
@@ -23,7 +23,7 @@ type AddressForm = z.infer<typeof addressSchema>;
 
 export default function CheckoutPage() {
   const { items, getSubtotal, clearCart } = useCartStore();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, hasHydrated } = useAuthStore();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -39,6 +39,26 @@ export default function CheckoutPage() {
       phone: user?.phone || '',
     },
   });
+
+  // Restrict access: only customers can checkout
+  useEffect(() => {
+    if (!hasHydrated) return;
+
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
+    if (user?.role !== 'customer') {
+      if (user?.role === 'admin' || user?.role === 'staff') {
+        router.push('/admin');
+      } else if (user?.role === 'supplier') {
+        router.push('/supplier');
+      } else {
+        router.push('/');
+      }
+    }
+  }, [hasHydrated, isAuthenticated, user, router]);
 
   const onSubmit = async (data: AddressForm) => {
     setIsSubmitting(true);
@@ -65,7 +85,6 @@ export default function CheckoutPage() {
         throw new Error('Order created but no ID returned');
       }
 
-      // Clear cart first, then navigate immediately
       clearCart();
       window.location.href = `/order/payment?orderId=${order.id}`;
     } catch (err: any) {
@@ -76,7 +95,11 @@ export default function CheckoutPage() {
     }
   };
 
-  // If cart is empty, show a message (but don't auto-redirect)
+  // Show nothing while checking auth
+  if (!hasHydrated || !isAuthenticated || user?.role !== 'customer') {
+    return <div className="p-8 text-center">Redirecting...</div>;
+  }
+
   if (items.length === 0) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
@@ -85,14 +108,6 @@ export default function CheckoutPage() {
         <Link href="/" className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
           Continue Shopping
         </Link>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <p>Please <Link href="/login" className="text-indigo-600">login</Link> to continue checkout.</p>
       </div>
     );
   }

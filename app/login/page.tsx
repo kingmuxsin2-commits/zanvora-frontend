@@ -31,19 +31,26 @@ export default function LoginPage() {
   const onSubmit = async (data: FormData) => {
     setError('');
     try {
-      const response = await login(data.email, data.password);
-      console.log('Login response:', response);
+      await login(data.email, data.password);
       
-      // Store token in localStorage (the store also does this, but we keep it as a fallback)
-      if (response?.token) {
-        localStorage.setItem('auth_token', response.token);
-        localStorage.setItem('auth_user', JSON.stringify(response.user));
-        console.log('Token saved to localStorage');
+      // After successful login, the auth store has saved the user to localStorage.
+      const userJson = localStorage.getItem('auth_user');
+      if (!userJson) {
+        throw new Error('User data not found after login');
       }
-      
-      router.push('/');
+      const user = JSON.parse(userJson);
+
+      // Redirect based on role
+      if (user.role === 'admin' || user.role === 'staff') {
+        router.push('/admin');
+      } else if (user.role === 'supplier') {
+        router.push('/supplier');
+      } else {
+        router.push('/');
+      }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed');
+      console.error('Login error:', err);
+      setError(err.response?.data?.message || err.message || 'Login failed');
     }
   };
 

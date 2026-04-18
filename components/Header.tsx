@@ -22,6 +22,7 @@ export default function Header() {
   };
 
   const showAuth = hasHydrated;
+  const isCustomer = user?.role === 'customer';
 
   return (
     <header className="border-b bg-white sticky top-0 z-40">
@@ -51,14 +52,16 @@ export default function Header() {
           {/* Right: Desktop Navigation (hidden on mobile) */}
           <div className="hidden md:flex flex-shrink-0">
             <nav className="flex items-center gap-2 md:gap-4 flex-wrap justify-end">
-              <Link href="/cart" className="hover:text-indigo-600 relative">
-                Cart
-                {totalItems > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-indigo-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                    {totalItems}
-                  </span>
-                )}
-              </Link>
+              {isCustomer && (
+                <Link href="/cart" className="hover:text-indigo-600 relative">
+                  Cart
+                  {totalItems > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-indigo-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                      {totalItems}
+                    </span>
+                  )}
+                </Link>
+              )}
               {showAuth ? (
                 isAuthenticated ? (
                   <>
@@ -70,6 +73,11 @@ export default function Header() {
                     {user?.role === 'admin' && (
                       <Link href="/admin" className="text-indigo-600 font-medium">
                         Admin
+                      </Link>
+                    )}
+                    {user?.role === 'staff' && (
+                      <Link href="/admin" className="text-indigo-600 font-medium">
+                        Staff Portal
                       </Link>
                     )}
                     {user?.role === 'supplier' && (
@@ -98,16 +106,18 @@ export default function Header() {
             </nav>
           </div>
 
-          {/* Mobile: Cart icon + Hamburger button */}
+          {/* Mobile: Cart icon (only for customers) + Hamburger button */}
           <div className="flex items-center gap-2 md:hidden">
-            <Link href="/cart" className="hover:text-indigo-600 relative p-1">
-              Cart
-              {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">
-                  {totalItems}
-                </span>
-              )}
-            </Link>
+            {isCustomer && (
+              <Link href="/cart" className="hover:text-indigo-600 relative p-1">
+                Cart
+                {totalItems > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">
+                    {totalItems}
+                  </span>
+                )}
+              </Link>
+            )}
             <button
               onClick={() => setMobileMenuOpen(true)}
               className="p-1 hover:bg-gray-100 rounded"
@@ -117,7 +127,7 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Mobile Search Bar (visible below header on small screens) */}
+        {/* Mobile Search Bar */}
         <div className="mt-3 md:hidden">
           <form onSubmit={handleSearch}>
             <input
@@ -134,12 +144,10 @@ export default function Header() {
       {/* Mobile Menu Drawer */}
       {mobileMenuOpen && (
         <>
-          {/* Backdrop */}
           <div
             className="fixed inset-0 bg-black bg-opacity-50 z-50 md:hidden"
             onClick={() => setMobileMenuOpen(false)}
           />
-          {/* Drawer */}
           <div className="fixed top-0 right-0 h-full w-64 bg-white shadow-lg z-50 md:hidden transform transition-transform duration-200 ease-in-out">
             <div className="p-4 border-b flex items-center justify-between">
               <h2 className="text-lg font-semibold text-indigo-600">Menu</h2>
@@ -155,13 +163,22 @@ export default function Header() {
                 isAuthenticated ? (
                   <>
                     {user?.role === 'customer' && (
-                      <Link
-                        href="/orders"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="block py-2 hover:text-indigo-600"
-                      >
-                        My Orders
-                      </Link>
+                      <>
+                        <Link
+                          href="/cart"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="block py-2 hover:text-indigo-600"
+                        >
+                          Cart {totalItems > 0 && `(${totalItems})`}
+                        </Link>
+                        <Link
+                          href="/orders"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="block py-2 hover:text-indigo-600"
+                        >
+                          My Orders
+                        </Link>
+                      </>
                     )}
                     {user?.role === 'admin' && (
                       <Link
@@ -170,6 +187,15 @@ export default function Header() {
                         className="block py-2 text-indigo-600 font-medium"
                       >
                         Admin Dashboard
+                      </Link>
+                    )}
+                    {user?.role === 'staff' && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="block py-2 text-indigo-600 font-medium"
+                      >
+                        Staff Portal
                       </Link>
                     )}
                     {user?.role === 'supplier' && (

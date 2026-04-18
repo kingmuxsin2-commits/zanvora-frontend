@@ -21,6 +21,7 @@ interface OrderStatus {
   created_at: string;
   payment_confirmed_at: string | null;
   admin_checking_at: string | null;
+  delivery_confirmed_at: string | null;   // ✅ new field
   fulfillments: Fulfillment[];
 }
 
@@ -36,10 +37,14 @@ export default function OrderStatusPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
-  
+
   const [order, setOrder] = useState<OrderStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [hydrated, setHydrated] = useState(false);
+  
+  // Delivery confirmation states
+  const [confirming, setConfirming] = useState(false);
+  const [deliveryConfirmed, setDeliveryConfirmed] = useState(false);
 
   useEffect(() => {
     setHydrated(true);
@@ -60,18 +65,37 @@ export default function OrderStatusPage() {
     }
 
     api.get(`/orders/${orderId}`)
-      .then((res: { data: OrderStatus }) => setOrder(res.data))
+      .then((res: { data: OrderStatus }) => {
+        setOrder(res.data);
+        setDeliveryConfirmed(!!res.data.delivery_confirmed_at);
+      })
       .catch(() => router.push('/'))
       .finally(() => setLoading(false));
   }, [orderId, router, hydrated]);
 
+  const handleConfirmDelivery = async () => {
+    if (!order) return;
+    setConfirming(true);
+    try {
+      await api.post(`/orders/${order.id}/confirm-delivery`);
+      setDeliveryConfirmed(true);
+      // Update the local order object so the UI reflects the confirmation
+      setOrder({ ...order, delivery_confirmed_at: new Date().toISOString() });
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to confirm delivery');
+    } finally {
+      setConfirming(false);
+    }
+  };
+
   if (!hydrated || loading) return <div className="p-8 text-center">Loading...</div>;
   if (!order) return <div className="p-8 text-center">Order not found</div>;
 
-  const currentStepIndex = statusSteps.findIndex(s => 
-    s.key === order.status || 
+  const currentStepIndex = statusSteps.findIndex(s =>
+    s.key === order.status ||
     (order.status === 'partial_shipped' && s.key === 'shipped')
   );
+  const isDelivered = order.status === 'delivered';
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
@@ -79,20 +103,25 @@ export default function OrderStatusPage() {
       <p className="text-gray-600 mb-6">
         Placed on {new Date(order.created_at).toLocaleDateString()}
       </p>
-      
+
       {/* Horizontal Timeline (Desktop only) */}
       <div className="hidden md:block mb-8">
         <div className="relative flex justify-between">
-          {statusSteps.map((step, idx) => (
-            <div key={step.key} className="flex flex-col items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                idx <= currentStepIndex ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-400'
-              }`}>
-                {idx < currentStepIndex ? '✓' : idx + 1}
+          {statusSteps.map((step, idx) => {
+            const isCompleted = isDelivered ? true : idx <= currentStepIndex;
+            return (
+              <div key={step.key} className="flex flex-col items-center">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    isCompleted ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-400'
+                  }`}
+                >
+                  {idx < currentStepIndex || isDelivered ? '✓' : idx + 1}
+                </div>
+                <span className="text-xs mt-1 text-center">{step.label}</span>
               </div>
-              <span className="text-xs mt-1 text-center">{step.label}</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -101,18 +130,26 @@ export default function OrderStatusPage() {
         <h2 className="font-semibold mb-3">Order Progress</h2>
         <ol className="space-y-2">
           {statusSteps.map((step, idx) => {
-            const isCompleted = idx < currentStepIndex;
-            const isCurrent = idx === currentStepIndex;
+            const isCompleted = isDelivered ? true : idx < currentStepIndex;
+            const isCurrent = isDelivered ? false : idx === currentStepIndex;
             return (
               <li key={step.key} className="flex items-start gap-3">
-                <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-sm ${
-                  isCompleted ? 'bg-indigo-600 text-white' :
-                  isCurrent ? 'bg-indigo-100 text-indigo-700 border-2 border-indigo-600' :
-                  'bg-gray-200 text-gray-500'
-                }`}>
+                <div
+                  className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-sm ${
+                    isCompleted
+                      ? 'bg-indigo-600 text-white'
+                      : isCurrent
+                      ? 'bg-indigo-100 text-indigo-700 border-2 border-indigo-600'
+                      : 'bg-gray-200 text-gray-500'
+                  }`}
+                >
                   {isCompleted ? '✓' : idx + 1}
                 </div>
-                <span className={`${isCurrent ? 'font-medium text-indigo-700' : 'text-gray-600'}`}>
+                <span
+                  className={`${
+                    isCurrent ? 'font-medium text-indigo-700' : 'text-gray-600'
+                  }`}
+                >
                   {step.label}
                 </span>
               </li>
@@ -126,27 +163,60 @@ export default function OrderStatusPage() {
         <h2 className="font-semibold mb-2">Payment Status</h2>
         {order.payment_status === 'pending_manual' && (
           <div className="text-yellow-600">
-            {order.admin_checking_at 
-              ? '⏳ Admin is checking your payment now.' 
+            {order.admin_checking_at
+              ? '⏳ Admin is checking your payment now.'
               : "⏳ Awaiting verification. We'll check within 30 minutes."}
             {!order.admin_checking_at && (
-              <a href={`/order/payment?orderId=${order.id}`} className="ml-4 text-indigo-600 hover:underline">
+              <a
+                href={`/order/payment?orderId=${order.id}`}
+                className="ml-4 text-indigo-600 hover:underline"
+              >
                 Go to Payment Page
               </a>
             )}
           </div>
         )}
-        {order.payment_status === 'paid' && (
+        {order.payment_status === 'paid' && !isDelivered && (
           <div className="text-green-600">
-            ✅ Confirmed on {order.payment_confirmed_at 
-              ? new Date(order.payment_confirmed_at).toLocaleString() 
+            ✅ Confirmed on{' '}
+            {order.payment_confirmed_at
+              ? new Date(order.payment_confirmed_at).toLocaleString()
               : '—'}
           </div>
+        )}
+        {order.payment_status === 'paid' && isDelivered && (
+          <div className="text-green-600">✅ Order delivered</div>
         )}
         {order.payment_status === 'cancelled' && (
           <div className="text-red-600">❌ Order cancelled</div>
         )}
       </div>
+
+      {/* Delivery Confirmation */}
+      {isDelivered && (
+        <div className="bg-gray-50 p-4 rounded-lg mb-6">
+          <h2 className="font-semibold mb-2">Delivery Confirmation</h2>
+          {deliveryConfirmed || order.delivery_confirmed_at ? (
+            <div className="text-green-600">
+              ✅ You confirmed delivery on{' '}
+              {order.delivery_confirmed_at
+                ? new Date(order.delivery_confirmed_at).toLocaleString()
+                : '—'}
+            </div>
+          ) : (
+            <div>
+              <p className="text-gray-600 mb-3">Has your order arrived? Let us know!</p>
+              <button
+                onClick={handleConfirmDelivery}
+                disabled={confirming}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+              >
+                {confirming ? 'Confirming...' : 'Confirm Delivery'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Shipments */}
       <div className="space-y-4">
@@ -161,7 +231,10 @@ export default function OrderStatusPage() {
               <div className="mt-2 p-3 bg-blue-50 rounded text-sm">
                 <p className="font-medium">📦 Tracking Information</p>
                 <p>Carrier: {f.carrier}</p>
-                <p>Tracking Number: <span className="font-mono">{f.tracking_number}</span></p>
+                <p>
+                  Tracking Number:{' '}
+                  <span className="font-mono">{f.tracking_number}</span>
+                </p>
                 {f.carrier === 'UPS' && (
                   <a
                     href={`https://www.ups.com/track?tracknum=${f.tracking_number}`}
@@ -202,6 +275,11 @@ export default function OrderStatusPage() {
                     Track on DHL →
                   </a>
                 )}
+              </div>
+            )}
+            {f.status === 'delivered' && (
+              <div className="mt-2 p-3 bg-green-50 rounded text-sm text-green-700">
+                ✓ Delivered
               </div>
             )}
           </div>

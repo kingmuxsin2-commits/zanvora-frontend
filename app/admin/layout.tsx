@@ -6,7 +6,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   LayoutDashboard, Users, Package, ShoppingCart, 
-  CreditCard, LogOut, BarChart3, Percent, Menu, X 
+  CreditCard, LogOut, BarChart3, Percent, Menu, X, Shield, Store,
+  BarChart2
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -26,9 +27,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (isLoading || !isAuthenticated) return <div className="p-8">Loading...</div>;
 
+  const isAdmin = user?.role === 'admin';
+  const portalTitle = isAdmin ? 'Marketplace Admin' : 'Staff Portal';
+
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden">
-      {/* Backdrop */}
+      {/* Mobile backdrop */}
       {sidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
@@ -46,7 +50,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         h-full overflow-y-auto
       `}>
         <div className="p-4 border-b flex items-center justify-between">
-          <h1 className="text-xl font-bold text-indigo-600">Admin</h1>
+          <h1 className="text-xl font-bold text-indigo-600">{portalTitle}</h1>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden p-1 hover:bg-gray-100 rounded">
             <X size={20} />
           </button>
@@ -67,12 +71,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link href="/admin/payments" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
             <CreditCard size={20} /> Payments
           </Link>
-          <Link href="/admin/commission" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
-            <Percent size={20} /> Commission
-          </Link>
+          
+          {/* Reports - visible to both admin and staff */}
           <Link href="/admin/reports" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
             <BarChart3 size={20} /> Reports
           </Link>
+
+          {/* View Marketplace - visible to both admin and staff */}
+          <Link href="/" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
+            <Store size={20} /> View Marketplace
+          </Link>
+
+          {/* Admin-only links */}
+          {isAdmin && (
+            <>
+              <Link href="/admin/commission" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
+                <Percent size={20} /> Commission
+              </Link>
+              <Link href="/admin/admins" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
+                <Shield size={20} /> Admins
+              </Link>
+              <Link href="/admin/analytics" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
+                <BarChart2 size={20} /> Analytics
+              </Link>
+            </>
+          )}
+
           <button onClick={() => { logout(); setSidebarOpen(false); }} className="flex items-center gap-2 p-2 text-red-600 hover:bg-red-50 rounded w-full">
             <LogOut size={20} /> Logout
           </button>
@@ -85,7 +109,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <button onClick={() => setSidebarOpen(true)} className="p-1 hover:bg-gray-100 rounded">
             <Menu size={24} />
           </button>
-          <h1 className="ml-4 text-lg font-semibold text-indigo-600">Admin</h1>
+          <h1 className="ml-4 text-lg font-semibold text-indigo-600">{portalTitle}</h1>
         </div>
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
           {children}

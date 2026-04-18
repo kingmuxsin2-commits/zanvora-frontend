@@ -22,6 +22,13 @@ interface Order {
     quantity: number;
     unit_price: string | number;
   }>;
+  fulfillments?: Array<{
+    id: number;
+    status: string;
+    tracking_number: string | null;
+    carrier: string | null;
+    supplier: { business_name: string };
+  }>;
 }
 
 export default function AdminOrdersPage() {
@@ -31,6 +38,7 @@ export default function AdminOrdersPage() {
   const [search, setSearch] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
 
   const statuses = ['all', 'pending_payment', 'paid', 'processing', 'shipped', 'delivered', 'cancelled'];
 
@@ -38,7 +46,7 @@ export default function AdminOrdersPage() {
     const params = new URLSearchParams();
     if (filter !== 'all') params.append('status', filter);
     if (search) params.append('search', search);
-    
+
     api.get(`/admin/orders?${params}`)
       .then(res => {
         const data = res.data.data || res.data || [];
@@ -50,6 +58,36 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     fetchOrders();
   }, [filter, search]);
+
+  const fetchOrderDetails = async (orderId: number) => {
+    setModalLoading(true);
+    try {
+      const res = await api.get(`/orders/${orderId}`);
+      setSelectedOrder(res.data);
+    } catch {
+      alert('Failed to load order details');
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const handleMarkDelivered = async (fulfillmentId: number) => {
+    if (!confirm('Mark this fulfillment as delivered?')) return;
+    try {
+      await api.post(`/admin/fulfillments/${fulfillmentId}/deliver`);
+      if (selectedOrder) {
+        await fetchOrderDetails(selectedOrder.id);
+      }
+    } catch {
+      alert('Failed to mark as delivered');
+    }
+  };
+
+  const openModal = (order: Order) => {
+    setSelectedOrder(order);
+    setShowModal(true);
+    fetchOrderDetails(order.id);
+  };
 
   if (loading) return <div className="p-8 text-center">Loading...</div>;
 
@@ -124,7 +162,7 @@ export default function AdminOrdersPage() {
                 <td className="p-4 whitespace-nowrap">{new Date(o.created_at).toLocaleDateString()}</td>
                 <td className="p-4">
                   <button
-                    onClick={() => { setSelectedOrder(o); setShowModal(true); }}
+                    onClick={() => openModal(o)}
                     className="p-1 text-indigo-600 hover:bg-indigo-50 rounded"
                     title="View Details"
                   >
@@ -138,38 +176,79 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Order Details Modal */}
-      {showModal && selectedOrder && (
+      {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white p-6 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Order #{selectedOrder.order_number}</h2>
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-medium">Customer</h3>
-                <p>{selectedOrder.customer.name}</p>
-                <p className="text-sm text-gray-600">{selectedOrder.customer.email} • {selectedOrder.customer.phone}</p>
-              </div>
-              <div>
-                <h3 className="font-medium">Items</h3>
-                <ul className="divide-y">
-                  {selectedOrder.items.map(item => (
-                    <li key={item.id} className="py-2 flex justify-between">
-                      <span>{item.product.title} x {item.quantity}</span>
-                      <span>${Number(item.unit_price).toFixed(2)}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="border-t pt-2 flex justify-between font-bold">
-                <span>Total</span>
-                <span>${Number(selectedOrder.total_amount).toFixed(2)}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div><span className="font-medium">Status:</span> {selectedOrder.status}</div>
-                <div><span className="font-medium">Payment:</span> {selectedOrder.payment_status}</div>
-                <div><span className="font-medium">Placed:</span> {new Date(selectedOrder.created_at).toLocaleString()}</div>
-              </div>
-            </div>
-            <button onClick={() => setShowModal(false)} className="mt-4 px-4 py-2 bg-gray-100 rounded w-full">Close</button>
+            {modalLoading || !selectedOrder ? (
+              <div className="text-center py-8">Loading order details...</div>
+            ) : (
+              <>
+                <h2 className="text-xl font-bold mb-4">Order #{selectedOrder.order_number}</h2>
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-medium">Customer</h3>
+                    <p>{selectedOrder.customer.name}</p>
+                    <p className="text-sm text-gray-600">{selectedOrder.customer.email} • {selectedOrder.customer.phone}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Items</h3>
+                    <ul className="divide-y">
+                      {selectedOrder.items.map(item => (
+                        <li key={item.id} className="py-2 flex justify-between">
+                          <span>{item.product.title} x {item.quantity}</span>
+                          <span>${Number(item.unit_price).toFixed(2)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="border-t pt-2 flex justify-between font-bold">
+                    <span>Total</span>
+                    <span>${Number(selectedOrder.total_amount).toFixed(2)}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div><span className="font-medium">Status:</span> {selectedOrder.status}</div>
+                    <div><span className="font-medium">Payment:</span> {selectedOrder.payment_status}</div>
+                    <div><span className="font-medium">Placed:</span> {new Date(selectedOrder.created_at).toLocaleString()}</div>
+                  </div>
+
+                  {/* Fulfillments Section */}
+                  {selectedOrder.fulfillments && selectedOrder.fulfillments.length > 0 && (
+                    <div className="border-t pt-4">
+                      <h3 className="font-medium mb-2">Fulfillments</h3>
+                      <div className="space-y-2">
+                        {selectedOrder.fulfillments.map(f => (
+                          <div key={f.id} className="border p-3 rounded flex items-center justify-between">
+                            <div>
+                              <p className="font-medium">{f.supplier?.business_name || 'Unknown Supplier'}</p>
+                              <p className="text-sm text-gray-600">
+                                Status: <span className="capitalize">{f.status}</span>
+                                {f.tracking_number && (
+                                  <> · Tracking: {f.tracking_number} ({f.carrier})</>
+                                )}
+                              </p>
+                            </div>
+                            {f.status === 'shipped' && (
+                              <button
+                                onClick={() => handleMarkDelivered(f.id)}
+                                className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200"
+                              >
+                                Mark Delivered
+                              </button>
+                            )}
+                            {f.status === 'delivered' && (
+                              <span className="text-green-600 text-sm">✓ Delivered</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <button onClick={() => setShowModal(false)} className="mt-4 px-4 py-2 bg-gray-100 rounded w-full">
+                  Close
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

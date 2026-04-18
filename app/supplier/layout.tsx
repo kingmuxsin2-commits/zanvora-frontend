@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   LayoutDashboard, Package, ShoppingCart, BarChart3,
-  LogOut, Store, HelpCircle, Menu, X 
+  LogOut, Store, HelpCircle, Menu, X, BarChart2 
 } from 'lucide-react';
 
 export default function SupplierLayout({ children }: { children: React.ReactNode }) {
@@ -19,12 +19,21 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
       router.push('/login');
       return;
     }
-    if (!isLoading && user && user.role !== 'supplier') {
-      router.push('/');
+    if (!isLoading && user) {
+      if (user.role !== 'supplier') {
+        router.push('/');
+        return;
+      }
+      // Check if supplier is approved
+      if (user.supplier && !user.supplier.is_approved) {
+        router.push('/supplier/pending');
+        return;
+      }
     }
   }, [isAuthenticated, isLoading, user, router]);
 
   if (isLoading || !isAuthenticated) return <div className="p-8">Loading...</div>;
+  if (!user?.supplier?.is_approved) return <div className="p-8">Checking approval...</div>;
 
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden">
@@ -60,12 +69,21 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
           <Link href="/supplier/earnings" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
             <BarChart3 size={20} /> Earnings
           </Link>
+          <Link href="/supplier/analytics" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
+            <BarChart2 size={20} /> Analytics
+          </Link>
           <Link href="/supplier/store" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
             <Store size={20} /> Store Settings
           </Link>
           <Link href="/supplier/guide" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
             <HelpCircle size={20} /> Guide
           </Link>
+          
+          {/* View Marketplace link */}
+          <Link href="/" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
+            <Store size={20} /> View Marketplace
+          </Link>
+
           <button onClick={() => { logout(); setSidebarOpen(false); }} className="flex items-center gap-2 p-2 text-red-600 hover:bg-red-50 rounded w-full">
             <LogOut size={20} /> Logout
           </button>

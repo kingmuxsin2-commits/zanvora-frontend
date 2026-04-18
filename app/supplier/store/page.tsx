@@ -12,27 +12,14 @@ export default function SupplierStoreSettingsPage() {
   const [formData, setFormData] = useState({
     business_name: '',
     address: '',
-    shipping_flat_fee: '',
-    payment_details: {
-      paypal_email: '',
-      venmo_handle: '',
-      bank_details: '',
-    },
   });
 
   useEffect(() => {
     if (user?.supplier) {
       const supplier = user.supplier;
-      const pd = supplier.payment_details || {};
       setFormData({
         business_name: supplier.business_name || '',
         address: supplier.address || '',
-        shipping_flat_fee: String(supplier.shipping_flat_fee ?? '0'),
-        payment_details: {
-          paypal_email: pd.paypal_email || '',
-          venmo_handle: pd.venmo_handle || '',
-          bank_details: pd.bank_details || '',
-        },
       });
     }
     setLoading(false);
@@ -42,10 +29,7 @@ export default function SupplierStoreSettingsPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.put('/supplier/settings', {
-        ...formData,
-        shipping_flat_fee: parseFloat(formData.shipping_flat_fee) || 0,
-      });
+      await api.put('/supplier/settings', formData);
       alert('Settings saved successfully');
     } catch {
       alert('Failed to save settings');
@@ -82,65 +66,6 @@ export default function SupplierStoreSettingsPage() {
                 onChange={e => setFormData({...formData, address: e.target.value})}
                 className="w-full px-3 py-2 border rounded"
                 rows={3}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Shipping Settings</h2>
-          <div>
-            <label className="block text-sm font-medium mb-1">Flat Shipping Fee ($)</label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={formData.shipping_flat_fee}
-              onChange={e => setFormData({...formData, shipping_flat_fee: e.target.value})}
-              className="w-full px-3 py-2 border rounded"
-            />
-            <p className="text-gray-500 text-sm mt-1">This fee will be added to each order containing your products.</p>
-          </div>
-        </div>
-
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Payment Details</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">PayPal Email</label>
-              <input
-                type="email"
-                value={formData.payment_details.paypal_email}
-                onChange={e => setFormData({
-                  ...formData,
-                  payment_details: { ...formData.payment_details, paypal_email: e.target.value }
-                })}
-                className="w-full px-3 py-2 border rounded"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Venmo Handle</label>
-              <input
-                type="text"
-                value={formData.payment_details.venmo_handle}
-                onChange={e => setFormData({
-                  ...formData,
-                  payment_details: { ...formData.payment_details, venmo_handle: e.target.value }
-                })}
-                className="w-full px-3 py-2 border rounded"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Bank Details (for wire transfer)</label>
-              <textarea
-                value={formData.payment_details.bank_details}
-                onChange={e => setFormData({
-                  ...formData,
-                  payment_details: { ...formData.payment_details, bank_details: e.target.value }
-                })}
-                className="w-full px-3 py-2 border rounded"
-                rows={3}
-                placeholder="Account name, bank name, account number, routing number"
               />
             </div>
           </div>

@@ -1,12 +1,31 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useCartStore } from '@/stores/cartStore';
+import { useAuthStore } from '@/stores/authStore';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, getSubtotal } = useCartStore();
+  const { user, isAuthenticated, hasHydrated } = useAuthStore();
+  const router = useRouter();
 
+  // Ensure user is authenticated
+  useEffect(() => {
+    if (!hasHydrated) return;
+    if (!isAuthenticated) {
+      router.push('/login');
+    }
+  }, [hasHydrated, isAuthenticated, router]);
+
+  // Show loading while hydration completes
+  if (!hasHydrated || !isAuthenticated) {
+    return <div className="p-8 text-center">Loading...</div>;
+  }
+
+  // Empty cart state
   if (items.length === 0) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
@@ -17,6 +36,8 @@ export default function CartPage() {
       </div>
     );
   }
+
+  const isCustomer = user?.role === 'customer';
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -41,28 +62,34 @@ export default function CartPage() {
                 </Link>
                 <p className="text-sm text-gray-500">{item.supplier_name}</p>
                 <p className="font-bold">${item.price}</p>
-                <div className="flex items-center gap-3 mt-2">
-                  <button
-                    onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
-                    className="w-8 h-8 border rounded flex items-center justify-center"
-                  >
-                    -
-                  </button>
-                  <span>{item.quantity}</span>
-                  <button
-                    onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
-                    className="w-8 h-8 border rounded flex items-center justify-center"
-                    disabled={item.max_qty !== undefined && item.quantity >= item.max_qty}
-                  >
-                    +
-                  </button>
-                  <button
-                    onClick={() => removeItem(item.product_id)}
-                    className="ml-auto text-red-500 hover:underline text-sm"
-                  >
-                    Remove
-                  </button>
-                </div>
+                {isCustomer ? (
+                  <div className="flex items-center gap-3 mt-2">
+                    <button
+                      onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
+                      className="w-8 h-8 border rounded flex items-center justify-center"
+                    >
+                      -
+                    </button>
+                    <span>{item.quantity}</span>
+                    <button
+                      onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
+                      className="w-8 h-8 border rounded flex items-center justify-center"
+                      disabled={item.max_qty !== undefined && item.quantity >= item.max_qty}
+                    >
+                      +
+                    </button>
+                    <button
+                      onClick={() => removeItem(item.product_id)}
+                      className="ml-auto text-red-500 hover:underline text-sm"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-2 text-gray-600">
+                    <span>Quantity: {item.quantity}</span>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -84,12 +111,19 @@ export default function CartPage() {
                 <span>${getSubtotal().toFixed(2)}</span>
               </div>
             </div>
-            <Link
-              href="/checkout"
-              className="block w-full mt-6 bg-indigo-600 text-white text-center py-3 rounded-lg hover:bg-indigo-700"
-            >
-              Proceed to Checkout
-            </Link>
+            {isCustomer && (
+              <Link
+                href="/checkout"
+                className="block w-full mt-6 bg-indigo-600 text-white text-center py-3 rounded-lg hover:bg-indigo-700"
+              >
+                Proceed to Checkout
+              </Link>
+            )}
+            {!isCustomer && (
+              <p className="mt-4 text-sm text-gray-500 italic text-center">
+                You are viewing the cart as a staff member.
+              </p>
+            )}
           </div>
         </div>
       </div>

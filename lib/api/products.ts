@@ -20,6 +20,8 @@ export interface Product {
   supplier: Supplier;
   created_at: string;
   updated_at: string;
+  average_rating: number;
+  total_reviews: number;
 }
 
 export interface ProductListResponse {
@@ -45,12 +47,19 @@ export const getProducts = async (params?: {
   search?: string;
   supplier_id?: number;
   page?: number;
+  per_page?: number;
+  sort?: string;
+  signal?: AbortSignal;
 }): Promise<ProductListResponse> => {
-  const { data } = await api.get('/products', { params });
+  const { signal, ...rest } = params || {};
+  const { data } = await api.get('/products', { params: rest, signal });
   return data;
 };
 
-export const getProduct = async (id: number): Promise<{ data: Product }> => {
-  const { data } = await api.get(`/products/${id}`);
+export const getProduct = async (
+  id: number,
+  signal?: AbortSignal
+): Promise<{ data: Product }> => {
+  const { data } = await api.get(`/products/${id}`, { signal });
   return data;
 };
