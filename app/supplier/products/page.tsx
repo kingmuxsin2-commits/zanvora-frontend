@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import api from '@/lib/api';
-import { Plus, Edit, Trash2, Eye, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, ToggleLeft, ToggleRight, X, Upload, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 
 interface Product {
@@ -20,19 +20,21 @@ interface Product {
 export default function SupplierProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     wholesale_price: '',
     stock_qty: '',
-    images: [] as File[],
     status: 'draft',
   });
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchProducts = () => {
     api.get('/supplier/products')
@@ -47,19 +49,35 @@ export default function SupplierProductsPage() {
     fetchProducts();
   }, []);
 
+  const resetForm = () => {
+    setFormData({ title: '', description: '', wholesale_price: '', stock_qty: '', status: 'draft' });
+    setImageFiles([]);
+    setImagePreviewUrls([]);
+    setExistingImages([]);
+    setEditingProduct(null);
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setFormData({ ...formData, images: files });
+    if (files.length + imageFiles.length + existingImages.length > 5) {
+      alert('You can upload up to 5 images.');
+      return;
+    }
+    setImageFiles(prev => [...prev, ...files]);
     const urls = files.map(f => URL.createObjectURL(f));
-    setImagePreviewUrls(urls);
+    setImagePreviewUrls(prev => [...prev, ...urls]);
   };
 
-  const resetForm = () => {
-    setFormData({ title: '', description: '', wholesale_price: '', stock_qty: '', images: [], status: 'draft' });
-    setImagePreviewUrls([]);
+  const removeNewImage = (index: number) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
+    setImagePreviewUrls(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const removeExistingImage = (index: number) => {
+    setExistingImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     const payload = new FormData();
@@ -68,47 +86,25 @@ export default function SupplierProductsPage() {
     payload.append('wholesale_price', formData.wholesale_price);
     payload.append('stock_qty', formData.stock_qty);
     payload.append('status', formData.status);
-    formData.images.forEach(img => payload.append('images[]', img));
     
-    try {
-      await api.post('/supplier/products', payload, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      fetchProducts();
-      setShowAddModal(false);
-      resetForm();
-    } catch {
-      alert('Failed to create product');
-    } finally {
-      setSaving(false);
-    }
-  };
+    imageFiles.forEach(file => payload.append('images[]', file));
+    payload.append('existing_images', JSON.stringify(existingImages));
 
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedProduct) return;
-    setSaving(true);
-    const payload = new FormData();
-    payload.append('title', formData.title);
-    payload.append('description', formData.description);
-    payload.append('wholesale_price', formData.wholesale_price);
-    payload.append('stock_qty', formData.stock_qty);
-    payload.append('status', formData.status);
-    formData.images.forEach(img => payload.append('images[]', img));
-    if (formData.images.length === 0) {
-      // If no new images, we don't send the field so backend keeps existing ones
-    }
-    
     try {
-      await api.post(`/supplier/products/${selectedProduct.id}`, payload, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      if (editingProduct) {
+        await api.post(`/supplier/products/${editingProduct.id}`, payload, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      } else {
+        await api.post('/supplier/products', payload, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      }
       fetchProducts();
-      setShowEditModal(false);
-      setSelectedProduct(null);
+      setShowModal(false);
       resetForm();
-    } catch {
-      alert('Failed to update product');
+    } catch (error) {
+      alert('Failed to save product');
     } finally {
       setSaving(false);
     }
@@ -135,17 +131,23 @@ export default function SupplierProductsPage() {
   };
 
   const openEditModal = (product: Product) => {
-    setSelectedProduct(product);
+    setEditingProduct(product);
     setFormData({
       title: product.title,
       description: product.description || '',
       wholesale_price: String(product.wholesale_price),
       stock_qty: String(product.stock_qty),
-      images: [],
       status: product.status,
     });
-    setImagePreviewUrls(product.images || []);
-    setShowEditModal(true);
+    setExistingImages(product.images || []);
+    setImageFiles([]);
+    setImagePreviewUrls([]);
+    setShowModal(true);
+  };
+
+  const getImageUrl = (path: string) => {
+    if (path.startsWith('http')) return path;
+    return `${process.env.NEXT_PUBLIC_API_URL?.replace('/api','') || 'http://marketplace-api.test'}${path}`;
   };
 
   if (loading) return <div className="p-8 text-center">Loading...</div>;
@@ -155,7 +157,8 @@ export default function SupplierProductsPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">My Products</h1>
         <button
-          onClick={() => { resetForm(); setShowAddModal(true); }}
+          type="button"
+          onClick={() => { resetForm(); setShowModal(true); }}
           className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
         >
           <Plus size={20} /> Add Product
@@ -179,7 +182,7 @@ export default function SupplierProductsPage() {
                 <td className="p-4">
                   <div className="flex items-center gap-3">
                     {p.images?.[0] && (
-                      <img src={p.images[0]} alt={p.title} className="w-10 h-10 object-cover rounded" />
+                      <img src={getImageUrl(p.images[0])} alt={p.title} className="w-10 h-10 object-cover rounded" />
                     )}
                     <div>
                       <p className="font-medium">{p.title}</p>
@@ -194,10 +197,7 @@ export default function SupplierProductsPage() {
                 </td>
                 <td className="p-4">{p.stock_qty}</td>
                 <td className="p-4">
-                  <button
-                    onClick={() => handleToggleStatus(p)}
-                    className="flex items-center gap-1 text-sm"
-                  >
+                  <button onClick={() => handleToggleStatus(p)} className="flex items-center gap-1 text-sm">
                     {p.status === 'active' ? (
                       <><ToggleRight className="text-green-600" size={20} /> Active</>
                     ) : p.status === 'pending_review' ? (
@@ -226,12 +226,54 @@ export default function SupplierProductsPage() {
         </table>
       </div>
 
-      {/* Add/Edit Modal - same form for both, differentiate by mode */}
-      {(showAddModal || showEditModal) && (
+      {/* Add/Edit Modal */}
+      {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white p-6 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">{showAddModal ? 'Add Product' : 'Edit Product'}</h2>
-            <form onSubmit={showAddModal ? handleCreate : handleUpdate} className="space-y-4">
+          <div className="bg-white p-6 rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">{editingProduct ? 'Edit Product' : 'Add Product'}</h2>
+              <button
+                type="button"
+                onClick={() => setShowPreview(!showPreview)}
+                className="text-indigo-600 text-sm hover:underline"
+              >
+                {showPreview ? 'Hide Preview' : 'Preview'}
+              </button>
+            </div>
+            
+            {showPreview && (
+              <div className="mb-4 p-4 border rounded-lg bg-gray-50">
+                <h3 className="font-medium mb-2">Preview (Customer View)</h3>
+                <div className="max-w-sm border rounded-lg overflow-hidden">
+                  <div className="aspect-square bg-gray-100">
+                    {(imagePreviewUrls[0] || existingImages[0]) ? (
+                      <img 
+                        src={imagePreviewUrls[0] || getImageUrl(existingImages[0])} 
+                        alt="Preview" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">No image</div>
+                    )}
+                  </div>
+                  <div className="p-3">
+                    <p className="font-medium">{formData.title || 'Product Title'}</p>
+                    <p className="text-sm text-gray-500">Your Store</p>
+                    <p className="text-lg font-bold mt-1">
+                      ${formData.wholesale_price ? Number(formData.wholesale_price).toFixed(2) : '0.00'}
+                      <span className="text-xs font-normal text-gray-500 ml-1">(Wholesale)</span>
+                    </p>
+                    <ul className="list-disc list-inside text-sm text-gray-600 mt-2">
+                      {formData.description.split(/\n|\.\s+/).filter(line => line.trim()).slice(0, 3).map((line, i) => (
+                        <li key={i}>{line}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Title *</label>
                 <input
@@ -243,12 +285,16 @@ export default function SupplierProductsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Description</label>
+                <label className="block text-sm font-medium mb-1">
+                  Description 
+                  <span className="text-gray-400 text-xs ml-2">(Use bullet points: start each line with a dash or asterisk)</span>
+                </label>
                 <textarea
                   value={formData.description}
                   onChange={e => setFormData({...formData, description: e.target.value})}
                   className="w-full px-3 py-2 border rounded"
-                  rows={3}
+                  rows={4}
+                  placeholder="- Feature one&#10;- Feature two&#10;- Feature three"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -275,18 +321,50 @@ export default function SupplierProductsPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Images (max 5)</label>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="w-full"
-                />
-                {imagePreviewUrls.length > 0 && (
-                  <div className="flex gap-2 mt-2">
+                <label className="block text-sm font-medium mb-1">
+                  <ImageIcon size={16} className="inline mr-1" />
+                  Images (max 5)
+                </label>
+                <div 
+                  className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload size={24} className="mx-auto text-gray-400 mb-1" />
+                  <p className="text-sm text-gray-500">Click or drag to upload</p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </div>
+                {(existingImages.length > 0 || imagePreviewUrls.length > 0) && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {existingImages.map((url, idx) => (
+                      <div key={`existing-${idx}`} className="relative w-16 h-16">
+                        <img src={getImageUrl(url)} alt="" className="w-full h-full object-cover rounded" />
+                        <button
+                          type="button"
+                          onClick={() => removeExistingImage(idx)}
+                          className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
                     {imagePreviewUrls.map((url, idx) => (
-                      <img key={idx} src={url} alt="Preview" className="w-16 h-16 object-cover rounded" />
+                      <div key={`new-${idx}`} className="relative w-16 h-16">
+                        <img src={url} alt="" className="w-full h-full object-cover rounded" />
+                        <button
+                          type="button"
+                          onClick={() => removeNewImage(idx)}
+                          className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -301,13 +379,13 @@ export default function SupplierProductsPage() {
                   <option value="draft">Draft</option>
                   <option value="pending_review">Submit for Review</option>
                   <option value="paused">Paused (Hidden)</option>
-                  {selectedProduct?.status === 'active' && <option value="active">Active</option>}
+                  {editingProduct?.status === 'active' && <option value="active">Active</option>}
                 </select>
               </div>
               <div className="flex justify-end gap-2 pt-4">
                 <button
                   type="button"
-                  onClick={() => { setShowAddModal(false); setShowEditModal(false); resetForm(); }}
+                  onClick={() => { setShowModal(false); resetForm(); }}
                   className="px-4 py-2 border rounded"
                 >
                   Cancel
@@ -317,7 +395,7 @@ export default function SupplierProductsPage() {
                   disabled={saving}
                   className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
                 >
-                  {saving ? 'Saving...' : (showAddModal ? 'Create' : 'Update')}
+                  {saving ? 'Saving...' : (editingProduct ? 'Update' : 'Create')}
                 </button>
               </div>
             </form>

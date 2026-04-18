@@ -11,6 +11,7 @@ export interface CartItem {
   supplier_id: number;
   supplier_name: string;
   max_qty?: number;
+  variants?: Record<string, string>; // ✅ NEW: selected variant options
 }
 
 interface CartState {

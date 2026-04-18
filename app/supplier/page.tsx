@@ -87,7 +87,7 @@ export default function SupplierDashboard() {
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <h3 className="font-semibold mb-4">Quick Actions</h3>
           <div className="space-y-3">
-            <Link href="/supplier/products/new" className="block p-3 border rounded hover:bg-gray-50">
+            <Link href="/supplier/products" className="block p-3 border rounded hover:bg-gray-50">
               ➕ Add New Product
             </Link>
             <Link href="/supplier/orders" className="block p-3 border rounded hover:bg-gray-50">
