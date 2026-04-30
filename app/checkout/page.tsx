@@ -10,6 +10,16 @@ import { useAuthStore } from '@/stores/authStore';
 import Link from 'next/link';
 import api from '@/lib/api';
 
+const USD_TO_SLSH = 12000;
+
+function formatSLSH(usd: number): string {
+  return (usd * USD_TO_SLSH).toLocaleString('en-US');
+}
+
+function toSLSH(usd: number): number {
+  return usd * USD_TO_SLSH;
+}
+
 const addressSchema = z.object({
   name: z.string().min(1, 'Name required'),
   phone: z.string().min(1, 'Phone required'),
@@ -64,6 +74,8 @@ export default function CheckoutPage() {
     setIsSubmitting(true);
     setError('');
     try {
+      const slshTotal = toSLSH(getSubtotal());
+
       const orderData = {
         shipping_address: {
           name: data.name,
@@ -76,6 +88,7 @@ export default function CheckoutPage() {
           product_id: item.product_id,
           quantity: item.quantity,
         })),
+        total_amount: slshTotal,   // ← SLSH amount sent to backend
       };
 
       const response = await api.post('/orders', orderData);
@@ -163,9 +176,10 @@ export default function CheckoutPage() {
               </div>
             ))}
             <div className="border-t pt-2 mt-2 font-bold flex justify-between">
-              <span>Total</span>
-              <span>${getSubtotal().toFixed(2)}</span>
+              <span>Total (SLSH)</span>
+              <span>SLSH {formatSLSH(getSubtotal())}</span>
             </div>
+
           </div>
         </div>
 

@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Marketplace",
+  title: "ZanVora",
   description: "Multi-vendor dropshipping marketplace",
 };
 

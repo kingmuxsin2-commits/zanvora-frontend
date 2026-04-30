@@ -70,10 +70,12 @@ export default function PaymentPage() {
   if (!hydrated || loading) return <div className="p-8 text-center">Loading...</div>;
   if (!order) return <div className="p-8 text-center">Order not found</div>;
 
+  // Convert to whole number for USSD (no decimals, no commas)
   const amount = typeof order.total_amount === 'string' 
     ? parseFloat(order.total_amount) 
     : order.total_amount;
-  const ussdCode = `*880*83838383*${amount.toFixed(2)}#`;
+  const roundedAmount = Math.round(amount);
+  const ussdCode = `*220*0634702443*${roundedAmount}#`;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-md">
@@ -84,6 +86,9 @@ export default function PaymentPage() {
           </div>
           <h1 className="text-2xl font-bold">Order Placed!</h1>
           <p className="text-gray-600">Order #{order.order_number}</p>
+          <p className="text-sm text-gray-500 mt-2">
+            Amount: SLSH {roundedAmount.toLocaleString('en-US')}
+          </p>
         </div>
 
         <div className="bg-gray-50 p-4 rounded-lg mb-6">

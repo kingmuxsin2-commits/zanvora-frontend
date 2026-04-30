@@ -21,7 +21,7 @@ interface OrderStatus {
   created_at: string;
   payment_confirmed_at: string | null;
   admin_checking_at: string | null;
-  delivery_confirmed_at: string | null;   // ✅ new field
+  delivery_confirmed_at: string | null;
   fulfillments: Fulfillment[];
 }
 
@@ -42,7 +42,6 @@ export default function OrderStatusPage() {
   const [loading, setLoading] = useState(true);
   const [hydrated, setHydrated] = useState(false);
   
-  // Delivery confirmation states
   const [confirming, setConfirming] = useState(false);
   const [deliveryConfirmed, setDeliveryConfirmed] = useState(false);
 
@@ -79,7 +78,6 @@ export default function OrderStatusPage() {
     try {
       await api.post(`/orders/${order.id}/confirm-delivery`);
       setDeliveryConfirmed(true);
-      // Update the local order object so the UI reflects the confirmation
       setOrder({ ...order, delivery_confirmed_at: new Date().toISOString() });
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to confirm delivery');
@@ -223,7 +221,7 @@ export default function OrderStatusPage() {
         <h2 className="font-semibold">Shipments</h2>
         {order.fulfillments.map(f => (
           <div key={f.id} className="border p-4 rounded">
-            <p className="font-medium">{f.supplier.business_name}</p>
+            {/* Supplier name removed */}
             <p className="text-sm text-gray-600">
               Status: <span className="capitalize">{f.status.replace('_', ' ')}</span>
             </p>

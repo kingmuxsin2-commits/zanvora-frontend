@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import {
   Users, ShoppingBag, TrendingUp, Repeat, Calendar, UserCheck,
-  Package, CheckCircle, Clock, AlertCircle, DollarSign, Layers
+  Package, CheckCircle, Clock, AlertCircle, DollarSign, Layers,
+  Activity
 } from 'lucide-react';
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -86,15 +87,37 @@ interface ChurnData {
   churn_rate: number;
 }
 
+// ---------- NEW: Inventory Analytics ----------
+interface InventoryAnalyticsData {
+  summary: {
+    total_transactions: number;
+    total_suppliers: number;
+    total_buy_value: number;
+    total_sell_value: number;
+    avg_margin: number;
+  };
+  daily_trend: Array<{ date: string; count: number }>;
+  supplier_breakdown: Array<{
+    supplier_id: number;
+    business_name: string;
+    transaction_count: number;
+    last_activity: string;
+    total_buy_value: number;
+    total_sell_value: number;
+    margin: number;
+    avg_transactions_per_day?: number;
+  }>;
+}
+
 // ---------- Main Page ----------
 export default function AdminAnalyticsPage() {
-  const [activeTab, setActiveTab] = useState<'customers' | 'suppliers' | 'products'>('customers');
+  const [activeTab, setActiveTab] = useState<'customers' | 'suppliers' | 'products' | 'inventory'>('customers');
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
-        <div className="flex gap-2 border-b">
+        <div className="flex gap-2 border-b flex-wrap">
           <TabButton active={activeTab === 'customers'} onClick={() => setActiveTab('customers')}>
             Customers
           </TabButton>
@@ -104,12 +127,16 @@ export default function AdminAnalyticsPage() {
           <TabButton active={activeTab === 'products'} onClick={() => setActiveTab('products')}>
             Products
           </TabButton>
+          <TabButton active={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')}>
+            Inventory
+          </TabButton>
         </div>
       </div>
 
       {activeTab === 'customers' && <CustomerAnalytics />}
       {activeTab === 'suppliers' && <SupplierAnalytics />}
       {activeTab === 'products' && <ProductAnalytics />}
+      {activeTab === 'inventory' && <InventoryAnalytics />}
     </div>
   );
 }
@@ -127,7 +154,7 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
   );
 }
 
-// ---------- Customer Analytics (Enhanced with RFM + LTV) ----------
+// ---------- Customer Analytics ----------
 function CustomerAnalytics() {
   const [data, setData] = useState<CustomerAnalyticsData | null>(null);
   const [cohortData, setCohortData] = useState<CohortData[]>([]);
@@ -168,7 +195,6 @@ function CustomerAnalytics() {
         <MetricCard title="Returning Customers (30d)" value={data.returning_customers_30d} subtitle="Ordered before & in last 30d" icon={<UserCheck className="text-teal-600" size={24} />} color="teal" />
       </div>
 
-      {/* RFM Segmentation */}
       {rfmData && (
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-4">RFM Segmentation</h2>
@@ -189,7 +215,6 @@ function CustomerAnalytics() {
         </div>
       )}
 
-      {/* LTV Distribution */}
       {ltvData && (
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-4">Customer Lifetime Value Distribution</h2>
@@ -210,7 +235,6 @@ function CustomerAnalytics() {
         </div>
       )}
 
-      {/* Signups Chart */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-semibold mb-4">New Signups (Last 30 Days)</h2>
         <div className="h-64">
@@ -226,7 +250,6 @@ function CustomerAnalytics() {
         </div>
       </div>
 
-      {/* Orders Chart */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-semibold mb-4">Orders Placed (Last 30 Days)</h2>
         <div className="h-64">
@@ -242,7 +265,6 @@ function CustomerAnalytics() {
         </div>
       </div>
 
-      {/* Cohort Retention Table */}
       <div className="bg-white p-6 rounded-lg shadow overflow-x-auto">
         <h2 className="text-xl font-semibold mb-4">Cohort Retention (by Signup Month)</h2>
         {cohortData.length === 0 ? (
@@ -281,7 +303,7 @@ function CustomerAnalytics() {
   );
 }
 
-// ---------- Supplier Analytics (Enhanced with ARPS, Cohort, Concentration, Churn) ----------
+// ---------- Supplier Analytics ----------
 function SupplierAnalytics() {
   const [data, setData] = useState<SupplierAnalyticsData | null>(null);
   const [cohortData, setCohortData] = useState<SupplierCohortData[]>([]);
@@ -316,14 +338,12 @@ function SupplierAnalytics() {
 
   return (
     <div className="space-y-8">
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <MetricCard title="Total Products Listed" value={data.total_products} icon={<Package className="text-blue-600" size={24} />} color="blue" />
         <MetricCard title="Active Suppliers" value={data.total_approved_suppliers} icon={<Users className="text-green-600" size={24} />} color="green" />
         <MetricCard title="Avg Products/Supplier" value={data.top_listers.length > 0 ? Math.round(data.total_products / data.top_listers.length) : 0} icon={<Layers className="text-purple-600" size={24} />} color="purple" />
       </div>
 
-      {/* ARPS Trend */}
       {arpsData.length > 0 && (
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-4">Average Revenue per Supplier (Last 12 Months)</h2>
@@ -341,7 +361,6 @@ function SupplierAnalytics() {
         </div>
       )}
 
-      {/* Top Sellers & Listers */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2"><TrendingUp className="text-indigo-600" size={20} /> Top Sellers (by Revenue)</h2>
@@ -367,7 +386,6 @@ function SupplierAnalytics() {
         </div>
       </div>
 
-      {/* Revenue Concentration & Churn */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {concentrationData && (
           <div className="bg-white p-6 rounded-lg shadow">
@@ -389,7 +407,6 @@ function SupplierAnalytics() {
         )}
       </div>
 
-      {/* Supplier Cohort Retention */}
       <div className="bg-white p-6 rounded-lg shadow overflow-x-auto">
         <h2 className="text-xl font-semibold mb-4">Supplier Retention (by Approval Month)</h2>
         {cohortData.length === 0 ? (
@@ -425,7 +442,6 @@ function SupplierAnalytics() {
         <p className="text-xs text-gray-400 mt-2">Percentage of suppliers who listed at least one product in the given month after approval.</p>
       </div>
 
-      {/* Products per Supplier Distribution */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-semibold mb-4">Products per Supplier Distribution</h2>
         <div className="h-64">
@@ -441,7 +457,6 @@ function SupplierAnalytics() {
         </div>
       </div>
 
-      {/* Monthly New Products */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-semibold mb-4">New Products Added (Last 12 Months)</h2>
         <div className="h-64">
@@ -582,6 +597,116 @@ function ProductAnalytics() {
             </BarChart>
           </ResponsiveContainer>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Inventory Analytics (NEW) ----------
+function InventoryAnalytics() {
+  const [data, setData] = useState<InventoryAnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [supplierFilter, setSupplierFilter] = useState('all');
+  const [suppliers, setSuppliers] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.get('/admin/suppliers/all').then(res => setSuppliers(res.data || []));
+  }, []);
+
+  const fetchData = (supplierId = 'all') => {
+    setLoading(true);
+    const params = supplierId !== 'all' ? { supplier_id: supplierId } : {};
+    api.get('/admin/analytics/inventory', { params })
+      .then(res => setData(res.data))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchData(supplierFilter);
+  }, [supplierFilter]);
+
+  if (loading) return <div className="p-8 text-center">Loading inventory analytics...</div>;
+  if (!data) return <div className="p-8 text-center">No data available</div>;
+
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center gap-4">
+        <label className="text-sm font-medium">Supplier:</label>
+        <select
+          value={supplierFilter}
+          onChange={e => setSupplierFilter(e.target.value)}
+          className="px-3 py-2 border rounded bg-white"
+        >
+          <option value="all">All Suppliers</option>
+          {suppliers.map((s: any) => (
+            <option key={s.id} value={s.id}>{s.business_name}</option>
+          ))}
+        </select>
+        <button onClick={() => fetchData(supplierFilter)} className="px-4 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700">Refresh</button>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <MetricCard title="Total Transactions" value={data.summary.total_transactions} icon={<Activity className="text-blue-600" size={24} />} color="blue" />
+        <MetricCard title="Active Suppliers" value={data.summary.total_suppliers} icon={<Users className="text-green-600" size={24} />} color="green" />
+        <MetricCard title="Total Buy Value" value={`$${data.summary.total_buy_value.toFixed(0)}`} icon={<ShoppingBag className="text-purple-600" size={24} />} color="purple" />
+        <MetricCard title="Total Sell Value" value={`$${data.summary.total_sell_value.toFixed(0)}`} icon={<DollarSign className="text-orange-600" size={24} />} color="orange" />
+        <MetricCard title="Avg Margin" value={`$${data.summary.avg_margin.toFixed(0)}`} icon={<TrendingUp className="text-teal-600" size={24} />} color="teal" />
+      </div>
+
+      {/* Daily Trend Chart */}
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h2 className="text-xl font-semibold mb-4">Daily Transactions</h2>
+        {data.daily_trend.length > 0 ? (
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data.daily_trend}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Bar dataKey="count" fill="#4F46E5" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <p className="text-gray-500 text-center py-12">No data for the selected period.</p>
+        )}
+      </div>
+
+      {/* Supplier Breakdown Table */}
+      <div className="bg-white rounded-lg shadow overflow-x-auto">
+        <h2 className="text-xl font-semibold p-4 border-b">Supplier Inventory Activity</h2>
+        {data.supplier_breakdown.length === 0 ? (
+          <p className="text-gray-500 text-center py-12">No supplier activity.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left p-3">Supplier</th>
+                <th className="text-center p-3">Transactions</th>
+                <th className="text-right p-3">Buy Value</th>
+                <th className="text-right p-3">Sell Value</th>
+                <th className="text-right p-3">Margin</th>
+                <th className="text-center p-3">Avg/Day</th>
+                <th className="text-left p-3">Last Activity</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.supplier_breakdown.map(s => (
+                <tr key={s.supplier_id} className="border-b hover:bg-gray-50">
+                  <td className="p-3 font-medium">{s.business_name}</td>
+                  <td className="p-3 text-center">{s.transaction_count}</td>
+                  <td className="p-3 text-right">${s.total_buy_value.toFixed(2)}</td>
+                  <td className="p-3 text-right">${s.total_sell_value.toFixed(2)}</td>
+                  <td className="p-3 text-right font-medium">${s.margin.toFixed(2)}</td>
+                  <td className="p-3 text-center">{s.avg_transactions_per_day}</td>
+                  <td className="p-3">{s.last_activity}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

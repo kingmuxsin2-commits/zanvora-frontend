@@ -8,7 +8,7 @@ export default function SupplierDashboard() {
   const [stats, setStats] = useState({
     totalProducts: 0,
     pendingOrders: 0,
-    monthlyRevenue: 0,
+    activeProducts: 0,   // ✅ new field
   });
   const [recentOrders, setRecentOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,13 +18,16 @@ export default function SupplierDashboard() {
       api.get('/supplier/products'),
       api.get('/supplier/orders?status=pending'),
     ])
-      .then(([products, orders]) => {
+      .then(([productsRes, ordersRes]) => {
+        const productsData = productsRes.data.data || productsRes.data || [];
+        const ordersData = ordersRes.data.data || ordersRes.data || [];
+
         setStats({
-          totalProducts: products.data.meta?.total || products.data.length || 0,
-          pendingOrders: orders.data.meta?.total || orders.data.length || 0,
-          monthlyRevenue: 0,
+          totalProducts: productsData.length,
+          pendingOrders: ordersData.length,
+          activeProducts: productsData.filter((p: any) => p.status === 'active').length,
         });
-        setRecentOrders(orders.data.data || orders.data.slice(0, 5));
+        setRecentOrders(ordersData.slice(0, 5));
       })
       .finally(() => setLoading(false));
   }, []);
@@ -46,8 +49,8 @@ export default function SupplierDashboard() {
           <p className="text-3xl font-bold text-orange-600">{stats.pendingOrders}</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h3 className="text-gray-500 text-sm">Monthly Revenue</h3>
-          <p className="text-3xl font-bold text-green-600">${stats.monthlyRevenue.toFixed(2)}</p>
+          <h3 className="text-gray-500 text-sm">Active Products</h3>
+          <p className="text-3xl font-bold text-green-600">{stats.activeProducts}</p>
         </div>
       </div>
 

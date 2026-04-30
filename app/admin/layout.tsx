@@ -28,7 +28,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (isLoading || !isAuthenticated) return <div className="p-8">Loading...</div>;
 
   const isAdmin = user?.role === 'admin';
-  const portalTitle = isAdmin ? 'Marketplace Admin' : 'Staff Portal';
+  const portalTitle = isAdmin ? 'ZanVora Admin' : 'Staff Portal';
 
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden">

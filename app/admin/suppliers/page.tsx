@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
-import { CheckCircle, XCircle, Eye } from 'lucide-react';
+import {
+  CheckCircle, XCircle, Eye, Plus,
+  ToggleLeft, ToggleRight
+} from 'lucide-react';
 
 interface Supplier {
   id: number;
@@ -24,6 +27,19 @@ export default function AdminSuppliersPage() {
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved'>('all');
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [showModal, setShowModal] = useState(false);
+
+  // Add Supplier modal state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    business_name: '',
+    address: '',
+    password: '',
+    password_confirmation: '',
+  });
+  const [saving, setSaving] = useState(false);
 
   const fetchSuppliers = () => {
     const endpoint = filter === 'pending' ? '/admin/suppliers/pending' : '/admin/suppliers';
@@ -67,6 +83,45 @@ export default function AdminSuppliersPage() {
     }
   };
 
+  const handleToggleStatus = async (supplier: Supplier) => {
+    setProcessing(supplier.id);
+    try {
+      await api.post(`/admin/suppliers/${supplier.id}/toggle-status`);
+      fetchSuppliers();
+    } catch {
+      alert('Failed to toggle status');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const handleCreateSupplier = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (formData.password !== formData.password_confirmation) {
+      alert('Passwords do not match');
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.post('/admin/suppliers', formData);
+      fetchSuppliers();
+      setShowAddModal(false);
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        business_name: '',
+        address: '',
+        password: '',
+        password_confirmation: '',
+      });
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to create supplier');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) return <div className="p-8 text-center">Loading...</div>;
 
   return (
@@ -91,6 +146,12 @@ export default function AdminSuppliersPage() {
             className={`px-4 py-2 rounded ${filter === 'approved' ? 'bg-indigo-600 text-white' : 'bg-gray-100'}`}
           >
             Approved
+          </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 flex items-center gap-1"
+          >
+            <Plus size={18} /> Add Supplier
           </button>
         </div>
       </div>
@@ -117,11 +178,24 @@ export default function AdminSuppliersPage() {
                 </td>
                 <td className="p-4">{s.address}</td>
                 <td className="p-4">
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    s.is_approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {s.is_approved ? 'Approved' : 'Pending'}
-                  </span>
+                  <button
+                    onClick={() => handleToggleStatus(s)}
+                    disabled={processing === s.id}
+                    className="flex items-center gap-1"
+                    title={s.is_approved ? 'Deactivate supplier' : 'Activate supplier'}
+                  >
+                    {s.is_approved ? (
+                      <>
+                        <ToggleRight className="text-green-600" size={20} />
+                        <span className="text-green-800 text-xs">Active</span>
+                      </>
+                    ) : (
+                      <>
+                        <ToggleLeft className="text-gray-400" size={20} />
+                        <span className="text-gray-600 text-xs">Deactivated</span>
+                      </>
+                    )}
+                  </button>
                 </td>
                 <td className="p-4 whitespace-nowrap">
                   {new Date(s.created_at).toLocaleDateString()}
@@ -135,6 +209,7 @@ export default function AdminSuppliersPage() {
                     >
                       <Eye size={18} />
                     </button>
+                    {/* Legacy pending suppliers: show approve/reject */}
                     {!s.is_approved && (
                       <>
                         <button
@@ -177,6 +252,103 @@ export default function AdminSuppliersPage() {
               <div><dt className="font-medium">Joined:</dt><dd>{new Date(selectedSupplier.created_at).toLocaleString()}</dd></div>
             </dl>
             <button onClick={() => setShowModal(false)} className="mt-4 px-4 py-2 bg-gray-100 rounded w-full">Close</button>
+          </div>
+        </div>
+      )}
+
+      {/* Add Supplier Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-6 rounded-lg w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Add New Supplier</h2>
+            <form onSubmit={handleCreateSupplier} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Contact Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={e => setFormData({...formData, name: e.target.value})}
+                  className="w-full px-3 py-2 border rounded"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Email *</label>
+                <input
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={e => setFormData({...formData, email: e.target.value})}
+                  className="w-full px-3 py-2 border rounded"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Phone *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.phone}
+                  onChange={e => setFormData({...formData, phone: e.target.value})}
+                  className="w-full px-3 py-2 border rounded"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Business Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.business_name}
+                  onChange={e => setFormData({...formData, business_name: e.target.value})}
+                  className="w-full px-3 py-2 border rounded"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Address *</label>
+                <textarea
+                  required
+                  value={formData.address}
+                  onChange={e => setFormData({...formData, address: e.target.value})}
+                  className="w-full px-3 py-2 border rounded"
+                  rows={2}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Password *</label>
+                <input
+                  type="password"
+                  required
+                  value={formData.password}
+                  onChange={e => setFormData({...formData, password: e.target.value})}
+                  className="w-full px-3 py-2 border rounded"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Confirm Password *</label>
+                <input
+                  type="password"
+                  required
+                  value={formData.password_confirmation}
+                  onChange={e => setFormData({...formData, password_confirmation: e.target.value})}
+                  className="w-full px-3 py-2 border rounded"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2 border rounded"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {saving ? 'Creating...' : 'Create Supplier'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -7,6 +7,12 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 
+const USD_TO_SLSH = 12000;
+
+function formatSLSH(usd: number): string {
+  return (usd * USD_TO_SLSH).toLocaleString('en-US');
+}
+
 export default function CartPage() {
   const { items, updateQuantity, removeItem, getSubtotal } = useCartStore();
   const { user, isAuthenticated, hasHydrated } = useAuthStore();
@@ -60,7 +66,6 @@ export default function CartPage() {
                 <Link href={`/product/${item.product_id}`} className="font-semibold hover:underline">
                   {item.title}
                 </Link>
-                <p className="text-sm text-gray-500">{item.supplier_name}</p>
                 <p className="font-bold">${item.price}</p>
                 {isCustomer ? (
                   <div className="flex items-center gap-3 mt-2">
@@ -99,7 +104,7 @@ export default function CartPage() {
             <h2 className="text-xl font-bold mb-4">Order Summary</h2>
             <div className="flex justify-between mb-2">
               <span>Subtotal</span>
-              <span>${getSubtotal().toFixed(2)}</span>
+              <span>SLSH {formatSLSH(getSubtotal())}</span>
             </div>
             <div className="flex justify-between mb-2 text-sm text-gray-600">
               <span>Shipping</span>
@@ -108,9 +113,12 @@ export default function CartPage() {
             <div className="border-t pt-4 mt-4">
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span>${getSubtotal().toFixed(2)}</span>
+                <span>SLSH {formatSLSH(getSubtotal())}</span>
               </div>
             </div>
+            <p className="text-xs text-gray-400 mt-2 text-center">
+              Converted at 1 USD = {USD_TO_SLSH.toLocaleString('en-US')} SLSH
+            </p>
             {isCustomer && (
               <Link
                 href="/checkout"

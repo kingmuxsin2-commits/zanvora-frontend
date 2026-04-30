@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getProduct, Product } from '@/lib/api/products';
 import { useCartStore } from '@/stores/cartStore';
@@ -10,7 +10,7 @@ import Link from 'next/link';
 import api from '@/lib/api';
 import {
   Play, ShieldCheck, Truck, RefreshCw, X, Star,
-  Share2, Link2, Check, MessageCircle
+  Share2, Link2, Check, MessageCircle, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 const BACKEND_URL =
@@ -39,10 +39,10 @@ export default function ProductPage() {
   // Video modal state
   const [showVideo, setShowVideo] = useState(false);
 
-  // Image gallery state
-  const [selectedImage, setSelectedImage] = useState('');
-  const [showZoom, setShowZoom] = useState(false);
-  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
+  // Image gallery state – carousel
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
 
   // Variant selection state
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
@@ -56,6 +56,32 @@ export default function ProductPage() {
 
   const isCustomer = user?.role === 'customer';
 
+  const images = product?.images || [];
+
+  const goTo = (index: number) => {
+    setCurrentIndex(index);
+  };
+  const nextImage = () => {
+    setCurrentIndex(prev => (prev + 1) % images.length);
+  };
+  const prevImage = () => {
+    setCurrentIndex(prev => (prev - 1 + images.length) % images.length);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = () => {
+    const diff = touchStartX.current - touchEndX.current;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) nextImage();
+      else prevImage();
+    }
+  };
+
   useEffect(() => {
     if (!id) return;
     setLoading(true);
@@ -65,9 +91,6 @@ export default function ProductPage() {
         const productData = (response as any).data ?? response;
         setProduct(productData as Product);
         addProduct(productData.id);
-        if (productData.images?.length) {
-          setSelectedImage(productData.images[0]);
-        }
         const defaults: Record<string, string> = {};
         if (productData.variants) {
           productData.variants.forEach((v: any) => {
@@ -168,7 +191,7 @@ export default function ProductPage() {
   };
 
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
-  const shareText = `Check out ${product?.title} on Marketplace!`;
+  const shareText = `Check out ${product?.title} on ZanVora!`;
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -210,49 +233,49 @@ export default function ProductPage() {
 
   const avgRating = product.average_rating ?? 0;
   const totalReviews = product.total_reviews ?? 0;
-  const displayImage = variantImage || selectedImage || product.images?.[0];
 
   return (
     <div className="container mx-auto px-4 py-8 pb-24 md:pb-8">
       <div className="grid md:grid-cols-2 gap-8">
-        {/* Enhanced Image Gallery */}
+        {/* Image Gallery – Carousel + Thumbnails */}
         <div className="space-y-2">
           <div
             className="aspect-square relative bg-gray-100 rounded-lg overflow-hidden"
-            onMouseEnter={() => setShowZoom(true)}
-            onMouseLeave={() => setShowZoom(false)}
-            onMouseMove={(e) => {
-              if (!showZoom) return;
-              const rect = e.currentTarget.getBoundingClientRect();
-              const x = ((e.clientX - rect.left) / rect.width) * 100;
-              const y = ((e.clientY - rect.top) / rect.height) * 100;
-              setZoomPosition({ x, y });
-            }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           >
-            {displayImage ? (
-              <>
-                <img
-                  src={getImageUrl(displayImage)}
-                  alt={product.title}
-                  className="w-full h-full object-contain"
-                />
-                {showZoom && (
-                  <div
-                    className="absolute inset-0 pointer-events-none"
-                    style={{
-                      backgroundImage: `url(${getImageUrl(displayImage)})`,
-                      backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
-                      backgroundSize: '200%',
-                      backgroundRepeat: 'no-repeat',
-                    }}
-                  />
-                )}
-              </>
+            {images.length > 0 ? (
+              <img
+                src={getImageUrl(images[currentIndex])}
+                alt={product.title}
+                className="w-full h-full object-contain"
+                draggable={false}
+                onDragStart={(e) => e.preventDefault()}
+              />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-gray-400">
                 No image
               </div>
             )}
+
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={prevImage}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-1 shadow"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <button
+                  onClick={nextImage}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-1 shadow"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </>
+            )}
+
             {(product as any).video_url && (
               <button
                 onClick={() => setShowVideo(true)}
@@ -265,14 +288,14 @@ export default function ProductPage() {
           </div>
 
           {/* Thumbnail Strip */}
-          {product.images && product.images.length > 1 && (
+          {images.length > 1 && (
             <div className="flex gap-2 overflow-x-auto pb-2">
-              {product.images.map((img, idx) => (
+              {images.map((img, idx) => (
                 <button
                   key={idx}
-                  onClick={() => setSelectedImage(img)}
+                  onClick={() => goTo(idx)}
                   className={`w-16 h-16 border-2 rounded-lg overflow-hidden flex-shrink-0 transition ${
-                    (variantImage || selectedImage) === img
+                    idx === currentIndex
                       ? 'border-indigo-600'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
@@ -281,6 +304,8 @@ export default function ProductPage() {
                     src={getImageUrl(img)}
                     alt={`Thumbnail ${idx + 1}`}
                     className="w-full h-full object-cover"
+                    draggable={false}
+                    onDragStart={(e) => e.preventDefault()}
                   />
                 </button>
               ))}
@@ -290,11 +315,8 @@ export default function ProductPage() {
 
         <div>
           <h1 className="text-3xl font-bold mb-2">{product.title}</h1>
-          <p className="text-gray-600 mb-4">
-            Sold by {product.supplier?.business_name || 'Unknown'}
-          </p>
 
-          {/* Rating Display + Share Button (without review button) */}
+          {/* Rating Display + Share Button */}
           <div className="flex items-center gap-2 mb-4">
             <div className="flex items-center gap-2">
               <div className="flex text-yellow-400 text-xl">
@@ -423,6 +445,8 @@ export default function ProductPage() {
                     src={getImageUrl(r.image)}
                     alt={`Customer review ${i + 1}`}
                     className="w-20 h-20 object-cover rounded-lg border"
+                    draggable={false}
+                    onDragStart={(e) => e.preventDefault()}
                   />
                 ))}
               </div>
@@ -493,7 +517,7 @@ export default function ProductPage() {
         </div>
       </div>
 
-      {/* Write a Review Link (Customers Only) - Professional blue text link */}
+      {/* Write a Review Link (Customers Only) */}
       {isCustomer && (
         <div className="mt-8 border-t pt-6">
           <button
@@ -612,6 +636,8 @@ export default function ProductPage() {
                     src={getImageUrl(r.image)}
                     alt="Review"
                     className="w-24 h-24 object-cover rounded-lg border"
+                    draggable={false}
+                    onDragStart={(e) => e.preventDefault()}
                   />
                 )}
               </div>

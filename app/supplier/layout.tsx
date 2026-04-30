@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
-  LayoutDashboard, Package, ShoppingCart, BarChart3,
-  LogOut, Store, HelpCircle, Menu, X, BarChart2 
+  LayoutDashboard, Package, PackageSearch, ShoppingCart,
+  LogOut, Store, Menu, X
 } from 'lucide-react';
 
 export default function SupplierLayout({ children }: { children: React.ReactNode }) {
@@ -49,7 +49,7 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
       `}>
         <div className="p-4 border-b flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-indigo-600">Supplier Portal</h1>
+            <h1 className="text-xl font-bold text-indigo-600">ZanVora Supplier</h1>
             <p className="text-sm text-gray-500">{user?.supplier?.business_name}</p>
           </div>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden p-1 hover:bg-gray-100 rounded">
@@ -63,20 +63,11 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
           <Link href="/supplier/products" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
             <Package size={20} /> Products
           </Link>
+          <Link href="/supplier/inventory" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
+            <PackageSearch size={20} /> Inventory
+          </Link>
           <Link href="/supplier/orders" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
             <ShoppingCart size={20} /> Orders
-          </Link>
-          <Link href="/supplier/earnings" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
-            <BarChart3 size={20} /> Earnings
-          </Link>
-          <Link href="/supplier/analytics" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
-            <BarChart2 size={20} /> Analytics
-          </Link>
-          <Link href="/supplier/store" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
-            <Store size={20} /> Store Settings
-          </Link>
-          <Link href="/supplier/guide" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
-            <HelpCircle size={20} /> Guide
           </Link>
           
           {/* View Marketplace link */}

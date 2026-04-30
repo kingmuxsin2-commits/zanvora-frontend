@@ -2,12 +2,10 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { getProducts, Product, ProductListResponse } from '@/lib/api/products';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useSearchParams } from 'next/navigation';
-import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -24,8 +22,6 @@ export default function HomePage() {
   const [perPage] = useState(12);
 
   const isCustomer = user?.role === 'customer';
-
-  const { products: recentProducts, loading: recentLoading } = useRecentlyViewed();
 
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -97,28 +93,46 @@ export default function HomePage() {
     }, 1);
   };
 
+  const getImageUrl = (path: string) => {
+    if (!path) return '';
+    if (path.startsWith('http')) return path;
+    return `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://marketplace-api.test'}${path}`;
+  };
+
+  // ───── Compact Product Card with short description ─────
   const renderProductCard = (product: Product) => (
-    <div key={product.id} className="border rounded-lg overflow-hidden hover:shadow-lg transition">
+    <div
+      key={product.id}
+      className="bg-white rounded-lg shadow-sm hover:shadow-md transition overflow-hidden"
+    >
       <Link href={`/product/${product.id}`}>
-        <div className="aspect-square relative bg-gray-100">
-          {product.images?.[0] && (
-            <Image
-              src={product.images[0]}
+        <div className="aspect-[3/4] relative bg-gray-100">
+          {product.images?.[0] ? (
+            <img
+              src={getImageUrl(product.images[0])}
               alt={product.title}
-              fill
-              className="object-cover"
+              className="w-full h-full object-cover"
+              draggable={false}
+              onDragStart={(e) => e.preventDefault()}
             />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
+              No image
+            </div>
           )}
         </div>
       </Link>
-      <div className="p-3">
-        <Link href={`/product/${product.id}`} className="font-medium line-clamp-2 hover:text-indigo-600">
+      <div className="p-2">
+        <Link
+          href={`/product/${product.id}`}
+          className="text-xs font-medium line-clamp-2 hover:text-indigo-600 text-gray-800"
+        >
           {product.title}
         </Link>
-        <p className="text-sm text-gray-500 mt-1">{product.supplier.business_name}</p>
-        
+
+        {/* Star Ratings */}
         <div className="flex items-center gap-1 mt-1">
-          <div className="flex text-yellow-400">
+          <div className="flex text-yellow-400 text-xs">
             {[1, 2, 3, 4, 5].map(star => (
               <span key={star}>
                 {star <= Math.floor(product.average_rating || 0) ? '★' : '☆'}
@@ -128,17 +142,25 @@ export default function HomePage() {
           <span className="text-xs text-gray-500">({product.total_reviews || 0})</span>
         </div>
 
-        <p className="text-lg font-bold mt-1">${product.retail_price}</p>
+        {/* Short description (first bullet point) */}
+        {product.description && (
+          <p className="text-xs text-gray-500 mt-1 line-clamp-1">
+            {product.description.split(/\n|\.\s+/)[0]}
+          </p>
+        )}
+
+        <p className="text-sm font-bold mt-1">${product.retail_price}</p>
+
         {isCustomer ? (
           <button
             onClick={() => handleQuickAdd(product)}
-            className="w-full mt-3 bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 text-sm"
+            className="w-full mt-2 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700 transition"
           >
             Add to Cart
           </button>
         ) : (
-          <div className="w-full mt-3 py-2 text-center text-sm text-gray-400 border border-dashed rounded">
-            Sign in as customer
+          <div className="w-full mt-2 py-1.5 text-xs text-center text-gray-400 border border-dashed rounded">
+            Sign in
           </div>
         )}
       </div>
@@ -150,17 +172,8 @@ export default function HomePage() {
   return (
     <main className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-4">
-        {search ? `Search results for "${search}"` : 'Marketplace'}
+        {search ? `Search results for "${search}"` : 'ZanVora'}
       </h1>
-
-      {!recentLoading && recentProducts.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Recently Viewed</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {recentProducts.map(product => renderProductCard(product))}
-          </div>
-        </div>
-      )}
 
       <div className="flex flex-wrap gap-4 mb-6 items-end">
         <div>
@@ -197,7 +210,7 @@ export default function HomePage() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
           {products.map(product => renderProductCard(product))}
         </div>
       )}
