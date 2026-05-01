@@ -35,12 +35,12 @@ export default function Header() {
   const isCustomer = user?.role === 'customer';
 
   return (
-    <header className="bg-indigo-600 sticky top-0 z-40">
+    <header className="border-b bg-blue-950 text-yellow-300 sticky top-0 z-40">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between gap-4">
           {/* Left: Logo */}
           <div className="flex-shrink-0">
-            <Link href="/" className="text-2xl font-bold text-white tracking-tight">
+            <Link href="/" className="text-2xl font-bold text-yellow-300">
               Zanvora Stores
             </Link>
           </div>

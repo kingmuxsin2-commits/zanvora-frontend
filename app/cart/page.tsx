@@ -4,8 +4,8 @@ import { useEffect } from 'react';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
+import { getImageUrl } from '@/lib/getImageUrl';   // ✅ shared helper
 
 const USD_TO_SLSH = 12000;
 
@@ -54,11 +54,10 @@ export default function CartPage() {
             <div key={item.product_id} className="flex gap-4 border-b pb-4">
               <div className="w-24 h-24 relative bg-gray-100 rounded">
                 {item.image && (
-                  <Image
-                    src={item.image}
+                  <img
+                    src={getImageUrl(item.image)}
                     alt={item.title}
-                    fill
-                    className="object-cover rounded"
+                    className="w-24 h-24 object-cover rounded"
                   />
                 )}
               </div>
@@ -120,12 +119,12 @@ export default function CartPage() {
               Converted at 1 USD = {USD_TO_SLSH.toLocaleString('en-US')} SLSH
             </p>
             {isCustomer && (
-              <Link
-                href="/checkout"
+              <button
+                onClick={() => { window.location.href = '/checkout'; }}
                 className="block w-full mt-6 bg-indigo-600 text-white text-center py-3 rounded-lg hover:bg-indigo-700"
               >
                 Proceed to Checkout
-              </Link>
+              </button>
             )}
             {!isCustomer && (
               <p className="mt-4 text-sm text-gray-500 italic text-center">

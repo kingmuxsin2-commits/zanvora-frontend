@@ -483,7 +483,7 @@ export default function ProductPage() {
                     disabled={currentStock < 1}
                     className="w-full md:w-auto px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {currentStock < 1 ? 'Out of Stock' : 'Add to Cart'}
+                    {currentStock < 1 ? 'Out of Stock' : 'Hadda Dalbo'}
                   </button>
                 </div>
               </div>
@@ -496,7 +496,7 @@ export default function ProductPage() {
                   <Truck size={16} /> Fast Shipping
                 </div>
                 <div className="flex items-center gap-1">
-                  <RefreshCw size={16} /> 30-Day Returns
+                  <RefreshCw size={16} /> 24-hour delivery
                 </div>
               </div>
             </>

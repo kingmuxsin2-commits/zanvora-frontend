@@ -52,7 +52,19 @@ export default function OrderStatusPage() {
   useEffect(() => {
     if (!hydrated) return;
 
-    const token = window.localStorage.getItem('auth_token');
+    // 🔐 Robust token retrieval – identical to payment page
+    let token = window.localStorage.getItem('auth_token');
+    if (!token) token = window.sessionStorage.getItem('auth_token');
+    if (!token) {
+      try {
+        const raw = window.localStorage.getItem('auth-storage');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          token = parsed?.state?.token;
+        }
+      } catch {}
+    }
+
     if (!token) {
       router.push('/login');
       return;
@@ -63,7 +75,9 @@ export default function OrderStatusPage() {
       return;
     }
 
-    api.get(`/orders/${orderId}`)
+    api.get(`/orders/${orderId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
       .then((res: { data: OrderStatus }) => {
         setOrder(res.data);
         setDeliveryConfirmed(!!res.data.delivery_confirmed_at);
@@ -163,7 +177,7 @@ export default function OrderStatusPage() {
           <div className="text-yellow-600">
             {order.admin_checking_at
               ? '⏳ Admin is checking your payment now.'
-              : "⏳ Awaiting verification. We'll check within 30 minutes."}
+              : "⏳ Macmiil yara sug inta la checking gareenayo dalbka"}
             {!order.admin_checking_at && (
               <a
                 href={`/order/payment?orderId=${order.id}`}

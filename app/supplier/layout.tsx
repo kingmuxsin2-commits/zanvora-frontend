@@ -10,16 +10,19 @@ import {
 } from 'lucide-react';
 
 export default function SupplierLayout({ children }: { children: React.ReactNode }) {
-  const { user, isAuthenticated, isLoading, logout } = useAuthStore();
+  const { user, isAuthenticated, isLoading, hasHydrated, logout } = useAuthStore();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    // Wait for the auth store to rehydrate from storage
+    if (!hasHydrated) return;
+
+    if (!isAuthenticated) {
       router.push('/login');
       return;
     }
-    if (!isLoading && user) {
+    if (user) {
       if (user.role !== 'supplier') {
         router.push('/');
         return;
@@ -30,9 +33,14 @@ export default function SupplierLayout({ children }: { children: React.ReactNode
         return;
       }
     }
-  }, [isAuthenticated, isLoading, user, router]);
+  }, [hasHydrated, isAuthenticated, user, router]);
 
-  if (isLoading || !isAuthenticated) return <div className="p-8">Loading...</div>;
+  // Show a loading screen until hydration completes
+  if (!hasHydrated || isLoading) {
+    return <div className="p-8">Loading...</div>;
+  }
+
+  if (!isAuthenticated) return <div className="p-8">Redirecting...</div>;
   if (!user?.supplier?.is_approved) return <div className="p-8">Checking approval...</div>;
 
   return (

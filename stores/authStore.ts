@@ -9,7 +9,7 @@ interface AuthState {
   isAuthenticated: boolean;
   hasHydrated: boolean;
   setHasHydrated: (state: boolean) => void;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (data: any) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -24,12 +24,13 @@ export const useAuthStore = create<AuthState>()(
       hasHydrated: false,
       setHasHydrated: (state) => set({ hasHydrated: state }),
 
-      login: async (email, password) => {
+      login: async (email, password, rememberMe = false) => {
         set({ isLoading: true });
         try {
           const response = await apiLogin({ email, password });
-          localStorage.setItem('auth_token', response.token);
-          localStorage.setItem('auth_user', JSON.stringify(response.user));
+          const storage = rememberMe ? localStorage : sessionStorage;
+          storage.setItem('auth_token', response.token);
+          storage.setItem('auth_user', JSON.stringify(response.user));
           set({ user: response.user, token: response.token, isAuthenticated: true });
         } finally {
           set({ isLoading: false });
@@ -56,9 +57,11 @@ export const useAuthStore = create<AuthState>()(
         }
         // Clear store state
         set({ user: null, token: null, isAuthenticated: false });
-        // Clear all auth-related localStorage
+        // Clear all auth-related storage
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_user');
+        sessionStorage.removeItem('auth_token');
+        sessionStorage.removeItem('auth_user');
         localStorage.removeItem('auth-storage'); // Clear Zustand persist cache
       },
     }),

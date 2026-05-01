@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useSearchParams } from 'next/navigation';
+import { getImageUrl } from '@/lib/getImageUrl';           // ✅ shared helper
 
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -93,12 +94,6 @@ export default function HomePage() {
     }, 1);
   };
 
-  const getImageUrl = (path: string) => {
-    if (!path) return '';
-    if (path.startsWith('http')) return path;
-    return `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://marketplace-api.test'}${path}`;
-  };
-
   // ───── Compact Product Card with short description ─────
   const renderProductCard = (product: Product) => (
     <div
@@ -156,7 +151,7 @@ export default function HomePage() {
             onClick={() => handleQuickAdd(product)}
             className="w-full mt-2 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700 transition"
           >
-            Add to Cart
+           Hadda Dalbo
           </button>
         ) : (
           <div className="w-full mt-2 py-1.5 text-xs text-center text-gray-400 border border-dashed rounded">
@@ -172,12 +167,12 @@ export default function HomePage() {
   return (
     <main className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-4">
-        {search ? `Search results for "${search}"` : 'ZanVora'}
+        
       </h1>
 
       <div className="flex flex-wrap gap-4 mb-6 items-end">
         <div>
-          <label className="block text-sm font-medium mb-1">Sort by</label>
+          
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value)}

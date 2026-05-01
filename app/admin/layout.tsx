@@ -7,25 +7,31 @@ import Link from 'next/link';
 import { 
   LayoutDashboard, Users, Package, ShoppingCart, 
   CreditCard, LogOut, BarChart3, Percent, Menu, X, Shield, Store,
-  BarChart2
+  BarChart2, ShieldCheck, MapPin
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { user, isAuthenticated, isLoading, logout } = useAuthStore();
+  const { user, isAuthenticated, isLoading, hasHydrated, logout } = useAuthStore();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    // Wait until the auth store has rehydrated from storage
+    if (!hasHydrated) return;
+
+    if (!isAuthenticated) {
       router.push('/login');
       return;
     }
-    if (!isLoading && user && !['admin', 'staff'].includes(user.role)) {
+    if (user && !['admin', 'staff'].includes(user.role)) {
       router.push('/');
     }
-  }, [isAuthenticated, isLoading, user, router]);
+  }, [hasHydrated, isAuthenticated, user, router]);
 
-  if (isLoading || !isAuthenticated) return <div className="p-8">Loading...</div>;
+  // Show a loading screen until hydration completes
+  if (!hasHydrated || isLoading) {
+    return <div className="p-8">Loading...</div>;
+  }
 
   const isAdmin = user?.role === 'admin';
   const portalTitle = isAdmin ? 'ZanVora Admin' : 'Staff Portal';
@@ -93,6 +99,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </Link>
               <Link href="/admin/analytics" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
                 <BarChart2 size={20} /> Analytics
+              </Link>
+              <Link href="/admin/controls" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
+                <ShieldCheck size={20} /> Controls
+              </Link>
+              <Link href="/admin/location" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded">
+                <MapPin size={20} /> Location
               </Link>
             </>
           )}

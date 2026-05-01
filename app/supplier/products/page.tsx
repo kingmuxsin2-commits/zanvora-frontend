@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import api from '@/lib/api';
 import { Plus, Edit, Trash2, Eye, ToggleLeft, ToggleRight, X, Upload, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
+import { getImageUrl } from '@/lib/getImageUrl';   // ✅ shared helper
 
 interface Product {
   id: number;
@@ -143,11 +144,6 @@ export default function SupplierProductsPage() {
     setImageFiles([]);
     setImagePreviewUrls([]);
     setShowModal(true);
-  };
-
-  const getImageUrl = (path: string) => {
-    if (path.startsWith('http')) return path;
-    return `${process.env.NEXT_PUBLIC_API_URL?.replace('/api','') || 'http://marketplace-api.test'}${path}`;
   };
 
   if (loading) return <div className="p-8 text-center">Loading...</div>;

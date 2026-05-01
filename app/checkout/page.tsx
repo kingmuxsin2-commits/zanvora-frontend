@@ -5,100 +5,118 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useCartStore } from '@/stores/cartStore';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/stores/authStore';
 import Link from 'next/link';
 import api from '@/lib/api';
 
 const USD_TO_SLSH = 12000;
 
-function formatSLSH(usd: number): string {
-  return (usd * USD_TO_SLSH).toLocaleString('en-US');
-}
-
 function toSLSH(usd: number): number {
   return usd * USD_TO_SLSH;
 }
 
+const degmoData: Record<string, string[]> = {
+  '26 June': ['Shacabka', 'Beerta Xorriyada', 'India Line', 'Jigjiga Yar'],
+  '31 May': ['Pebsiga'],
+  'Axmed Dhagax': ['Half London', 'Siinay', 'October'],
+  'Macalin Haarun': ['New Hargeisa'],
+  'Maxamed Mooge': ['Juungalka'],
+  'Maxamuud Haybe': ['Masallaha', 'Xiddigta', 'Jameeco-weyn', 'Calaamada', 'Qudhacdheer'],
+};
+
 const addressSchema = z.object({
   name: z.string().min(1, 'Name required'),
   phone: z.string().min(1, 'Phone required'),
-  address_line1: z.string().min(1, 'Address required'),
-  address_line2: z.string().optional(),
-  city: z.string().min(1, 'City required'),
-  postal_code: z.string().optional(),
+  degmo: z.string().min(1, 'Degmada required'),
+  xafad: z.string().min(1, 'Xafadda required'),
 });
 
 type AddressForm = z.infer<typeof addressSchema>;
 
 export default function CheckoutPage() {
-  const { items, getSubtotal, clearCart } = useCartStore();
-  const { isAuthenticated, user, hasHydrated } = useAuthStore();
-  const router = useRouter();
+  const { items, getSubtotal } = useCartStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [selectedDegmo, setSelectedDegmo] = useState('');
+  const [selectedXafad, setSelectedXafad] = useState('');
+  const [deliveryFeeUSD, setDeliveryFeeUSD] = useState(0);
+
+  // Gently pre‑fill name/phone from localStorage (no redirects)
+  const [defaultName, setDefaultName] = useState('');
+  const [defaultPhone, setDefaultPhone] = useState('');
+
+  const availableXafado = selectedDegmo ? degmoData[selectedDegmo] || [] : [];
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<AddressForm>({
     resolver: zodResolver(addressSchema),
-    defaultValues: {
-      name: user?.name || '',
-      phone: user?.phone || '',
-    },
+    defaultValues: { name: '', phone: '' },
   });
 
-  // Restrict access: only customers can checkout
+  // Read name/phone from localStorage on mount (does NOT redirect)
   useEffect(() => {
-    if (!hasHydrated) return;
+    try {
+      const userJson = window.localStorage.getItem('auth_user');
+      if (userJson) {
+        const user = JSON.parse(userJson);
+        setDefaultName(user.name || '');
+        setDefaultPhone(user.phone || '');
+        setValue('name', user.name || '');
+        setValue('phone', user.phone || '');
+      }
+    } catch {}
+  }, [setValue]);
 
-    if (!isAuthenticated) {
-      router.push('/login');
+  // Sync dropdowns with form
+  useEffect(() => {
+    setValue('degmo', selectedDegmo, { shouldValidate: true });
+  }, [selectedDegmo, setValue]);
+
+  useEffect(() => {
+    setValue('xafad', selectedXafad, { shouldValidate: true });
+  }, [selectedXafad, setValue]);
+
+  // Fetch delivery fee
+  useEffect(() => {
+    if (!selectedXafad) {
+      setDeliveryFeeUSD(0);
       return;
     }
-
-    if (user?.role !== 'customer') {
-      if (user?.role === 'admin' || user?.role === 'staff') {
-        router.push('/admin');
-      } else if (user?.role === 'supplier') {
-        router.push('/supplier');
-      } else {
-        router.push('/');
-      }
-    }
-  }, [hasHydrated, isAuthenticated, user, router]);
+    api.get(`/delivery-fee?xafad=${encodeURIComponent(selectedXafad)}`)
+      .then(res => setDeliveryFeeUSD(Number(res.data?.price ?? 0)))
+      .catch(() => setDeliveryFeeUSD(0));
+  }, [selectedXafad]);
 
   const onSubmit = async (data: AddressForm) => {
     setIsSubmitting(true);
     setError('');
     try {
-      const slshTotal = toSLSH(getSubtotal());
+      const merchandiseSLSH = toSLSH(getSubtotal());
+      const deliverySLSH = toSLSH(deliveryFeeUSD);
+      const totalSLSH = merchandiseSLSH + deliverySLSH;
 
       const orderData = {
         shipping_address: {
           name: data.name,
           phone: data.phone,
-          address: data.address_line1 + (data.address_line2 ? ', ' + data.address_line2 : ''),
-          city: data.city,
-          postal_code: data.postal_code || '',
+          address: `${data.degmo} – ${data.xafad}`,
         },
         items: items.map(item => ({
           product_id: item.product_id,
           quantity: item.quantity,
         })),
-        total_amount: slshTotal,   // ← SLSH amount sent to backend
+        total_amount: totalSLSH,
       };
 
       const response = await api.post('/orders', orderData);
       const order = response.data;
 
-      if (!order.id) {
-        throw new Error('Order created but no ID returned');
-      }
+      if (!order.id) throw new Error('Order created but no ID returned');
 
-      clearCart();
+      // Navigate to payment page immediately
       window.location.href = `/order/payment?orderId=${order.id}`;
     } catch (err: any) {
       console.error('Order error:', err);
@@ -107,11 +125,6 @@ export default function CheckoutPage() {
       setIsSubmitting(false);
     }
   };
-
-  // Show nothing while checking auth
-  if (!hasHydrated || !isAuthenticated || user?.role !== 'customer') {
-    return <div className="p-8 text-center">Redirecting...</div>;
-  }
 
   if (items.length === 0) {
     return (
@@ -124,6 +137,10 @@ export default function CheckoutPage() {
       </div>
     );
   }
+
+  const deliverySLSH = toSLSH(deliveryFeeUSD);
+  const totalUSD = getSubtotal() + deliveryFeeUSD;
+  const totalSLSH = toSLSH(totalUSD);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
@@ -144,28 +161,36 @@ export default function CheckoutPage() {
               {errors.phone && <p className="text-red-500 text-sm">{errors.phone.message}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Address Line 1</label>
-              <input {...register('address_line1')} className="w-full px-3 py-2 border rounded" />
-              {errors.address_line1 && <p className="text-red-500 text-sm">{errors.address_line1.message}</p>}
+              <label className="block text-sm font-medium mb-1">Degmada *</label>
+              <select
+                value={selectedDegmo}
+                onChange={(e) => { setSelectedDegmo(e.target.value); setSelectedXafad(''); }}
+                className="w-full px-3 py-2 border rounded"
+              >
+                <option value="">-- Dooro Degmada --</option>
+                {Object.keys(degmoData).map(degmo => (
+                  <option key={degmo} value={degmo}>{degmo}</option>
+                ))}
+              </select>
+              {errors.degmo && <p className="text-red-500 text-sm">{errors.degmo.message}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Address Line 2 (Optional)</label>
-              <input {...register('address_line2')} className="w-full px-3 py-2 border rounded" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">City</label>
-                <input {...register('city')} className="w-full px-3 py-2 border rounded" />
-                {errors.city && <p className="text-red-500 text-sm">{errors.city.message}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Postal Code</label>
-                <input {...register('postal_code')} className="w-full px-3 py-2 border rounded" />
-              </div>
+              <label className="block text-sm font-medium mb-1">Xafadda *</label>
+              <select
+                value={selectedXafad}
+                onChange={(e) => setSelectedXafad(e.target.value)}
+                disabled={!selectedDegmo}
+                className="w-full px-3 py-2 border rounded"
+              >
+                <option value="">-- Dooro Xafadda --</option>
+                {availableXafado.map(xafad => (
+                  <option key={xafad} value={xafad}>{xafad}</option>
+                ))}
+              </select>
+              {errors.xafad && <p className="text-red-500 text-sm">{errors.xafad.message}</p>}
             </div>
           </div>
         </div>
-
         <div className="border-t pt-6">
           <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
           <div className="space-y-2">
@@ -175,14 +200,19 @@ export default function CheckoutPage() {
                 <span>${(item.price * item.quantity).toFixed(2)}</span>
               </div>
             ))}
+            {deliveryFeeUSD > 0 && (
+              <div className="flex justify-between text-sm">
+                <span>Delivery Fee</span>
+                <span>${deliveryFeeUSD.toFixed(2)} (SLSH {deliverySLSH.toLocaleString('en-US')})</span>
+              </div>
+            )}
             <div className="border-t pt-2 mt-2 font-bold flex justify-between">
               <span>Total (SLSH)</span>
-              <span>SLSH {formatSLSH(getSubtotal())}</span>
+              <span>SLSH {totalSLSH.toLocaleString('en-US')}</span>
             </div>
-
+            <div className="text-xs text-gray-500 text-right">≈ ${totalUSD.toFixed(2)}</div>
           </div>
         </div>
-
         <button
           type="submit"
           disabled={isSubmitting}

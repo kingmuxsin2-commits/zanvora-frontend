@@ -16,7 +16,6 @@ interface Order {
   delivery_confirmed_at?: string | null;
 }
 
-// Define order status groups with display labels
 const STATUS_GROUPS = [
   { key: 'pending_payment', label: 'Awaiting Payment', defaultOpen: true },
   { key: 'processing', label: 'Processing', defaultOpen: true },
@@ -31,8 +30,7 @@ export default function CustomerOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
-  
-  // Track open/closed state for each status group
+
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
     STATUS_GROUPS.forEach(g => { initial[g.key] = g.defaultOpen; });
@@ -43,10 +41,22 @@ export default function CustomerOrdersPage() {
     setHydrated(true);
   }, []);
 
+  // 🔐 Identical token retrieval that works on the payment page
   useEffect(() => {
     if (!hydrated) return;
 
-    const token = localStorage.getItem('auth_token');
+    let token = window.localStorage.getItem('auth_token');
+    if (!token) token = window.sessionStorage.getItem('auth_token');
+    if (!token) {
+      try {
+        const raw = window.localStorage.getItem('auth-storage');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          token = parsed?.state?.token;
+        }
+      } catch {}
+    }
+
     if (!token) {
       router.push('/login');
       return;
@@ -68,7 +78,6 @@ export default function CustomerOrdersPage() {
   if (!hydrated || loading) return <div className="p-8 text-center">Loading...</div>;
   if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
 
-  // Group orders by status
   const ordersByStatus: Record<string, Order[]> = {};
   STATUS_GROUPS.forEach(g => { ordersByStatus[g.key] = []; });
   orders.forEach(order => {
@@ -142,9 +151,7 @@ export default function CustomerOrdersPage() {
           {STATUS_GROUPS.map(group => {
             const groupOrders = ordersByStatus[group.key] || [];
             if (groupOrders.length === 0) return null;
-            
             const isOpen = openGroups[group.key];
-            
             return (
               <div key={group.key} className="border rounded-lg overflow-hidden">
                 <button

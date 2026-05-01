@@ -1,12 +1,13 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 
 const schema = z.object({
   email: z.string().email('Invalid email'),
@@ -16,9 +17,11 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function LoginPage() {
-  const { login, isLoading } = useAuthStore();
+  const { login, isLoading, hasHydrated, isAuthenticated, user: currentUser } = useAuthStore();
   const router = useRouter();
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const {
     register,
@@ -28,17 +31,34 @@ export default function LoginPage() {
     resolver: zodResolver(schema),
   });
 
+  // ✅ Redirect already authenticated users
+  useEffect(() => {
+    if (!hasHydrated) return;
+    if (isAuthenticated && currentUser) {
+      const role = currentUser.role;
+      if (role === 'admin' || role === 'staff') {
+        router.push('/admin');
+      } else if (role === 'supplier') {
+        router.push('/supplier');
+      } else {
+        router.push('/');
+      }
+    }
+  }, [hasHydrated, isAuthenticated, currentUser, router]);
+
   const onSubmit = async (data: FormData) => {
     setError('');
     try {
-      await login(data.email, data.password);
-      
-      // After successful login, the auth store has saved the user to localStorage.
-      const userJson = localStorage.getItem('auth_user');
-      if (!userJson) {
+      // Pass rememberMe flag to the auth store
+      await login(data.email, data.password, rememberMe);
+
+      // Use the store's user state directly (already updated after login)
+      const state = useAuthStore.getState();
+      const user = state.user;
+
+      if (!user) {
         throw new Error('User data not found after login');
       }
-      const user = JSON.parse(userJson);
 
       // Redirect based on role
       if (user.role === 'admin' || user.role === 'staff') {
@@ -53,6 +73,15 @@ export default function LoginPage() {
       setError(err.response?.data?.message || err.message || 'Login failed');
     }
   };
+
+  // Show brief loading while store hydrates to avoid flash of login form
+  if (!hasHydrated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-500">Loading…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -71,13 +100,37 @@ export default function LoginPage() {
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Password</label>
-            <input
-              type="password"
-              {...register('password')}
-              className="w-full px-3 py-2 border rounded"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                {...register('password')}
+                className="w-full px-3 py-2 border rounded pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
             {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
           </div>
+
+          {/* Remember Me Checkbox */}
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="rememberMe"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="rounded"
+            />
+            <label htmlFor="rememberMe" className="text-sm text-gray-600 cursor-pointer">
+              Remember me
+            </label>
+          </div>
+
           <button
             type="submit"
             disabled={isLoading}

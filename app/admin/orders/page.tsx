@@ -29,6 +29,11 @@ interface Order {
     carrier: string | null;
     supplier: { business_name: string };
   }>;
+  shipping_address?: {
+    name?: string;
+    phone?: string;
+    address?: string;
+  };
 }
 
 export default function AdminOrdersPage() {
@@ -190,6 +195,17 @@ export default function AdminOrdersPage() {
                     <p>{selectedOrder.customer.name}</p>
                     <p className="text-sm text-gray-600">{selectedOrder.customer.email} • {selectedOrder.customer.phone}</p>
                   </div>
+
+                  {/* Shipping Address */}
+                  {selectedOrder.shipping_address && (
+                    <div>
+                      <h3 className="font-medium">Shipping Address</h3>
+                      <p>{selectedOrder.shipping_address.name}</p>
+                      <p>{selectedOrder.shipping_address.phone}</p>
+                      <p className="text-sm text-gray-600">{selectedOrder.shipping_address.address}</p>
+                    </div>
+                  )}
+
                   <div>
                     <h3 className="font-medium">Items</h3>
                     <ul className="divide-y">

@@ -5,6 +5,7 @@ import api from '@/lib/api';
 import {
   CheckCircle, XCircle, Eye, Search, CheckSquare, XSquare
 } from 'lucide-react';
+import { getImageUrl } from '@/lib/getImageUrl';   // ✅ shared helper
 
 interface Product {
   id: number;
@@ -134,12 +135,6 @@ export default function AdminProductsPage() {
     if (newSet.has(id)) newSet.delete(id);
     else newSet.add(id);
     setSelectedProducts(newSet);
-  };
-
-  const getImageUrl = (path: string) => {
-    if (!path) return '';
-    if (path.startsWith('http')) return path;
-    return `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://marketplace-api.test'}${path}`;
   };
 
   const formatPrice = (price: string | number) => {

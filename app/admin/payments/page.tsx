@@ -17,6 +17,11 @@ interface Order {
     name: string;
     phone: string;
   };
+  shipping_address?: {
+    name?: string;
+    phone?: string;
+    address?: string;   // combined "Degmada – Xafadda"
+  };
 }
 
 export default function AdminPaymentsPage() {
@@ -131,7 +136,8 @@ export default function AdminPaymentsPage() {
 
   const formatAmount = (amount: string | number) => {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return num.toFixed(2);
+    const usd = (num / 12000).toFixed(2);
+    return `SLSH ${num.toLocaleString('en-US')} (≈ $${usd})`;
   };
 
   if (loading) return <div className="p-4">Loading...</div>;
@@ -173,9 +179,17 @@ export default function AdminPaymentsPage() {
                     {order.customer.name}
                     <br />
                     <span className="text-xs md:text-sm text-gray-500">{order.customer.phone}</span>
+                    {order.shipping_address?.address && (
+                      <>
+                        <br />
+                        <span className="text-xs text-gray-400">
+                          📍 {order.shipping_address.address}
+                        </span>
+                      </>
+                    )}
                   </td>
                   <td className="p-2 md:p-4">
-                    <span className="font-bold text-sm">${formatAmount(order.total_amount)}</span>
+                    <span className="font-bold text-sm">{formatAmount(order.total_amount)}</span>
                     <button
                       onClick={() => copyAmount(order.total_amount)}
                       className="ml-2 text-indigo-600 text-xs hover:underline"

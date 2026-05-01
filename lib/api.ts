@@ -9,16 +9,23 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Request interceptor: add Bearer token from localStorage
+// Request interceptor: add Bearer token from localStorage or sessionStorage
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     try {
-      const storage = localStorage.getItem('auth-storage');
-      if (storage) {
-        const parsed = JSON.parse(storage);
-        const token = parsed?.state?.token;
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
+      // First check direct storage keys used by the updated auth store
+      const token = window.localStorage.getItem('auth_token') || window.sessionStorage.getItem('auth_token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      } else {
+        // Fallback: check Zustand persist cache for the token
+        const storage = localStorage.getItem('auth-storage');
+        if (storage) {
+          const parsed = JSON.parse(storage);
+          const persistToken = parsed?.state?.token;
+          if (persistToken) {
+            config.headers.Authorization = `Bearer ${persistToken}`;
+          }
         }
       }
     } catch (e) {
