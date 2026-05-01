@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCartStore } from '@/stores/cartStore';
 import api from '@/lib/api';
+import { useAuthStore } from '@/stores/authStore';
+import { useCartStore } from '@/stores/cartStore';
+import { PhoneCall } from 'lucide-react';
 
 interface Order {
   id: number;
@@ -17,15 +19,14 @@ export default function PaymentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
-  
+  const { clearCart } = useCartStore();
+
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState(false);
   const [claimed, setClaimed] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
-
-  const { clearCart } = useCartStore();
 
   useEffect(() => {
     setHydrated(true);
@@ -34,6 +35,7 @@ export default function PaymentPage() {
   useEffect(() => {
     if (!hydrated) return;
 
+    // 🔐 Robust token retrieval (localStorage ➜ sessionStorage ➜ Zustand cache)
     let token = window.localStorage.getItem('auth_token');
     if (!token) token = window.sessionStorage.getItem('auth_token');
     if (!token) {
@@ -56,12 +58,14 @@ export default function PaymentPage() {
       return;
     }
 
+    setLoading(true);
     api.get(`/orders/${orderId}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((res: { data: Order }) => {
+      .then((res) => {
         setOrder(res.data);
-        clearCart();   // ✅ Clean the cart immediately after order is fetched
+        // Clear cart as soon as we have the order
+        clearCart();
       })
       .catch(() => router.push('/'))
       .finally(() => setLoading(false));
@@ -74,7 +78,7 @@ export default function PaymentPage() {
       await api.post(`/orders/${order.id}/claim-payment`);
       setClaimed(true);
     } catch (error) {
-      alert('Failed to notify. Please try again.');
+      alert('Waan ku guul darreysanay in aan ogeysiis dirno. Fadlan isku day mar kale.');
     } finally {
       setClaiming(false);
     }
@@ -86,19 +90,15 @@ export default function PaymentPage() {
     setTimeout(() => setCopied(null), 2000);
   };
 
-  if (!hydrated || loading) {
-    return <div className="p-8 text-center">Loading…</div>;
-  }
-
-  if (!order) {
-    return <div className="p-8 text-center">Order not found</div>;
-  }
+  if (!hydrated || loading) return <div className="p-8 text-center">Loading...</div>;
+  if (!order) return <div className="p-8 text-center">Order not found</div>;
 
   const amount = typeof order.total_amount === 'string'
     ? parseFloat(order.total_amount)
     : order.total_amount;
-  const roundedAmount = Math.round(amount);
-  const ussdCode = `*220*0634702443*${roundedAmount}#`;
+  const formattedAmount = amount % 1 === 0 ? amount.toString() : amount.toFixed(2);
+  const ussdCode = `*220*4702443*${formattedAmount}#`;
+  const dialLink = `tel:${encodeURIComponent(ussdCode)}`;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-md">
@@ -109,25 +109,23 @@ export default function PaymentPage() {
           </div>
           <h1 className="text-2xl font-bold">Order Placed!</h1>
           <p className="text-gray-600">Order #{order.order_number}</p>
-          <p className="text-sm text-gray-500 mt-2">
-            Amount: SLSH {roundedAmount.toLocaleString('en-US')}
-          </p>
         </div>
 
         <div className="bg-gray-50 p-4 rounded-lg mb-6">
-          <h2 className="font-semibold mb-3">📱 Pay with Mobile Money</h2>
+          <h2 className="font-semibold mb-3">📱 gali numberkan mobilka:</h2>
 
-          <div className="mb-4">
-            <p className="text-sm text-gray-600 mb-1">gali numberkan mobilka:</p>
-            <div className="bg-black text-white p-3 rounded-lg font-mono text-lg text-center">
+          <div className="mb-4 text-center">
+            <p className="text-sm text-gray-600 mb-1">Dial this code on your phone:</p>
+            <div className="bg-black text-white p-3 rounded-lg font-mono text-lg text-center mb-3">
               {ussdCode}
             </div>
-            <button
-              onClick={() => copyToClipboard(ussdCode, 'code')}
-              className="text-indigo-600 text-sm mt-2 hover:underline"
+            <a
+              href={dialLink}
+              className="inline-flex items-center justify-center gap-2 bg-green-600 text-white px-6 py-3 rounded-md hover:bg-green-700 transition text-sm font-medium"
             >
-              {copied === 'code' ? '✓ Copied!' : 'Copy Code'}
-            </button>
+              <PhoneCall size={18} />
+              Dial Now
+            </a>
           </div>
 
           <div className="mb-4">
@@ -155,7 +153,7 @@ export default function PaymentPage() {
         ) : (
           <div className="bg-green-50 border border-green-200 p-4 rounded-lg mb-4 text-center">
             <p className="text-green-800">
-              ✅ mahadsanid! yara sug inta la xaqiijinayo
+              ✅ Mahadsanid! yara sug inta la xaqiijinayo.
             </p>
           </div>
         )}

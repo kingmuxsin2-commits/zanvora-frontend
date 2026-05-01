@@ -35,19 +35,98 @@ export default function Header() {
   const isCustomer = user?.role === 'customer';
 
   return (
-    <header className="border-b bg-blue-950 text-yellow-300 sticky top-0 z-40">
+    <header className="border-b border-yellow-500/30 bg-[#1A2F4F] text-yellow-500 sticky top-0 z-40">
+      {/* Shine animation for text */}
+      <style>{`
+        @keyframes shine {
+          0% { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+        .gold-shine {
+          background: linear-gradient(90deg,
+            #fbbf24 0%,
+            #f59e0b 20%,
+            #fff7e0 40%,
+            #fbbf24 60%,
+            #f59e0b 80%,
+            #fbbf24 100%);
+          background-size: 200% auto;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          animation: shine 3s linear infinite;
+          font-weight: 700;
+        }
+      `}</style>
+
       <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-between gap-4">
-          {/* Left: Logo */}
-          <div className="flex-shrink-0">
-            <Link href="/" className="text-2xl font-bold text-yellow-300">
-              Zanvora Stores
-            </Link>
+        <div className="flex items-center gap-4">
+          {/* Left: Logo + Text – anchored to the left */}
+          <div className="flex-shrink-0 flex items-center gap-2 mr-auto">
+            {/* Logo SVG */}
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 48 48"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <defs>
+                <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#fbbf24" />
+                  <stop offset="40%" stopColor="#fff7e0" />
+                  <stop offset="100%" stopColor="#f59e0b" />
+                </linearGradient>
+              </defs>
+
+              {/* Outer gold ring */}
+              <circle cx="24" cy="24" r="22" stroke="url(#goldGradient)" strokeWidth="2.5" fill="none" />
+
+              {/* Cart handle */}
+              <line x1="4" y1="13" x2="12" y2="13" stroke="url(#goldGradient)" strokeWidth="2.5" strokeLinecap="round" />
+
+              {/* Cart body */}
+              <path
+                d="M12 13 L12 30 L38 32 L38 18"
+                stroke="url(#goldGradient)"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+
+              {/* Wheels */}
+              <circle cx="18" cy="38" r="3" stroke="url(#goldGradient)" strokeWidth="2" fill="none" />
+              <circle cx="32" cy="38" r="3" stroke="url(#goldGradient)" strokeWidth="2" fill="none" />
+
+              {/* Z – balanced stroke */}
+              <path
+                d="M18 20 L32 20 L18 26 L32 26"
+                stroke="url(#goldGradient)"
+                strokeWidth="2.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+            </svg>
+
+            {/* Text – lowered to align Z’s */}
+            <div className="leading-tight mt-1">
+              <Link href="/" className="text-xl font-bold gold-shine block">
+                Zanvora
+              </Link>
+              <span
+                className="text-xs tracking-[0.2em] gold-shine block"
+                style={{ fontSize: '0.65rem', letterSpacing: '0.2em' }}
+              >
+                — STORE —
+              </span>
+            </div>
           </div>
 
-          {/* Center: single nav item */}
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-white/90">
-            <Link href="/" className="hover:text-white transition">
+          {/* Center: single nav item (hidden on mobile) */}
+          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-yellow-400/90">
+            <Link href="/" className="hover:text-yellow-300 transition">
               All Products
             </Link>
           </nav>
@@ -61,28 +140,28 @@ export default function Header() {
                 placeholder="Search products…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-56 pl-4 pr-10 py-2 rounded-full bg-white/20 text-white placeholder-white/70 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 text-sm"
+                className="w-56 pl-4 pr-10 py-2 rounded-full bg-yellow-500/20 text-yellow-200 placeholder-yellow-300/70 border border-yellow-500/40 focus:outline-none focus:ring-2 focus:ring-yellow-500/60 text-sm"
               />
-              <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-white/80 hover:text-white">
+              <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-yellow-400 hover:text-yellow-300">
                 <Search size={18} />
               </button>
             </form>
 
             {/* Desktop Navigation (auth) */}
             <div className="hidden md:flex flex-shrink-0">
-              <nav className="flex items-center gap-3 flex-wrap justify-end text-white/90 text-sm">
+              <nav className="flex items-center gap-3 flex-wrap justify-end text-yellow-400 text-sm">
                 {isCustomer && (
-                  <Link href="/cart" className="hover:text-white relative">
+                  <Link href="/cart" className="hover:text-yellow-300 relative">
                     <ShoppingBag size={20} />
                     {totalItems > 0 && (
-                      <span className="absolute -top-2 -right-2 bg-white text-indigo-600 text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                      <span className="absolute -top-2 -right-2 bg-yellow-500 text-[#0b1c2c] text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
                         {totalItems}
                       </span>
                     )}
                   </Link>
                 )}
                 {isCustomer && (
-                  <Link href="/orders" className="hover:text-white" title="My Orders">
+                  <Link href="/orders" className="hover:text-yellow-300" title="My Orders">
                     <Package size={20} />
                   </Link>
                 )}
@@ -90,37 +169,37 @@ export default function Header() {
                   isAuthenticated ? (
                     <>
                       {user?.role === 'admin' && (
-                        <Link href="/admin" className="text-white font-medium hover:underline">
+                        <Link href="/admin" className="text-yellow-300 font-medium hover:underline">
                           Admin
                         </Link>
                       )}
                       {user?.role === 'staff' && (
-                        <Link href="/admin" className="text-white font-medium hover:underline">
+                        <Link href="/admin" className="text-yellow-300 font-medium hover:underline">
                           Staff Portal
                         </Link>
                       )}
                       {user?.role === 'supplier' && (
-                        <Link href="/supplier" className="text-white font-medium hover:underline">
+                        <Link href="/supplier" className="text-yellow-300 font-medium hover:underline">
                           Supplier Portal
                         </Link>
                       )}
-                      <span className="text-white/80">Hi, {user?.name}</span>
-                      <button onClick={logout} className="text-white/80 hover:text-white hover:underline">
+                      <span className="text-yellow-400/80">Hi, {user?.name}</span>
+                      <button onClick={logout} className="text-yellow-400/80 hover:text-yellow-300 hover:underline">
                         Logout
                       </button>
                     </>
                   ) : (
                     <>
-                      <Link href="/login" className="hover:text-white">
+                      <Link href="/login" className="hover:text-yellow-300">
                         Login
                       </Link>
-                      <Link href="/register" className="bg-white text-indigo-600 px-4 py-1.5 rounded-full hover:bg-indigo-50 transition">
+                      <Link href="/register" className="bg-yellow-500 text-[#0b1c2c] px-4 py-1.5 rounded-full hover:bg-yellow-400 transition">
                         Register
                       </Link>
                     </>
                   )
                 ) : (
-                  <div className="w-20 h-6 bg-white/20 animate-pulse rounded" />
+                  <div className="w-20 h-6 bg-yellow-500/20 animate-pulse rounded" />
                 )}
               </nav>
             </div>
@@ -129,29 +208,29 @@ export default function Header() {
             <div className="flex items-center gap-2 md:hidden">
               <button
                 onClick={toggleMobileSearch}
-                className="p-2 text-white/80 hover:text-white"
+                className="p-2 text-yellow-400 hover:text-yellow-300"
                 aria-label="Toggle search"
               >
                 <Search size={20} />
               </button>
               {isCustomer && (
-                <Link href="/cart" className="text-white/80 hover:text-white relative p-1">
+                <Link href="/cart" className="text-yellow-400 hover:text-yellow-300 relative p-1">
                   <ShoppingBag size={20} />
                   {totalItems > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-white text-indigo-600 text-xs w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                    <span className="absolute -top-1 -right-1 bg-yellow-500 text-[#0b1c2c] text-xs w-4 h-4 rounded-full flex items-center justify-center font-bold">
                       {totalItems}
                     </span>
                   )}
                 </Link>
               )}
               {isCustomer && (
-                <Link href="/orders" className="text-white/80 hover:text-white p-1" title="My Orders">
+                <Link href="/orders" className="text-yellow-400 hover:text-yellow-300 p-1" title="My Orders">
                   <Package size={20} />
                 </Link>
               )}
               <button
                 onClick={() => setMobileMenuOpen(true)}
-                className="p-1 text-white/80 hover:text-white"
+                className="p-1 text-yellow-400 hover:text-yellow-300"
               >
                 <Menu size={24} />
               </button>
@@ -169,7 +248,7 @@ export default function Header() {
                 placeholder="Search products…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-white/20 text-white placeholder-white/70 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50"
+                className="w-full px-4 py-2 rounded-lg bg-yellow-500/20 text-yellow-200 placeholder-yellow-300/70 border border-yellow-500/40 focus:outline-none focus:ring-2 focus:ring-yellow-500/60"
               />
             </form>
           </div>

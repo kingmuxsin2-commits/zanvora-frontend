@@ -1,85 +1,45 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { getProducts, Product, ProductListResponse } from '@/lib/api/products';
 import Link from 'next/link';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useSearchParams } from 'next/navigation';
-import { getImageUrl } from '@/lib/getImageUrl';           // ✅ shared helper
+import { getImageUrl } from '@/lib/getImageUrl';
 
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
   const addItem = useCartStore(state => state.addItem);
   const { user } = useAuthStore();
   const searchParams = useSearchParams();
   const search = searchParams.get('search');
 
   const [sort, setSort] = useState('newest');
-  const [perPage] = useState(12);
+  const perPage = 200;   // enough to show all your products at once
 
   const isCustomer = user?.role === 'customer';
 
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  const loadMoreRef = useRef<HTMLDivElement>(null);
-
-  const fetchProducts = useCallback(async (reset = false) => {
-    if (reset) {
-      setLoading(true);
-      setPage(1);
-    } else {
-      setLoadingMore(true);
-    }
-
-    const currentPage = reset ? 1 : page;
-    const params: any = { per_page: perPage, page: currentPage, sort };
+  const fetchProducts = async () => {
+    setLoading(true);
+    const params: any = { per_page: perPage, page: 1, sort };
     if (search) params.search = search;
 
     try {
       const res: ProductListResponse = await getProducts(params);
       const newProducts: Product[] = res.data || [];
-
-      if (reset) {
-        setProducts(newProducts);
-      } else {
-        setProducts(prev => [...prev, ...newProducts]);
-      }
-
-      const lastPage = res.meta?.last_page || 1;
-      setHasMore(currentPage < lastPage);
-      setPage(currentPage + 1);
+      setProducts(newProducts);
     } catch (error) {
       console.error('Failed to fetch products:', error);
     } finally {
       setLoading(false);
-      setLoadingMore(false);
     }
-  }, [page, perPage, sort, search]);
+  };
 
   useEffect(() => {
-    fetchProducts(true);
+    fetchProducts();
   }, [sort, search]);
-
-  useEffect(() => {
-    if (loading || loadingMore) return;
-    if (observerRef.current) observerRef.current.disconnect();
-
-    observerRef.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) {
-        fetchProducts(false);
-      }
-    });
-
-    if (loadMoreRef.current) {
-      observerRef.current.observe(loadMoreRef.current);
-    }
-
-    return () => observerRef.current?.disconnect();
-  }, [loading, loadingMore, hasMore, fetchProducts]);
 
   const handleQuickAdd = (product: Product) => {
     if (!isCustomer) return;
@@ -94,7 +54,7 @@ export default function HomePage() {
     }, 1);
   };
 
-  // ───── Compact Product Card with short description ─────
+  // ───── Compact Product Card ─────
   const renderProductCard = (product: Product) => (
     <div
       key={product.id}
@@ -137,7 +97,7 @@ export default function HomePage() {
           <span className="text-xs text-gray-500">({product.total_reviews || 0})</span>
         </div>
 
-        {/* Short description (first bullet point) */}
+        {/* Short description */}
         {product.description && (
           <p className="text-xs text-gray-500 mt-1 line-clamp-1">
             {product.description.split(/\n|\.\s+/)[0]}
@@ -151,7 +111,7 @@ export default function HomePage() {
             onClick={() => handleQuickAdd(product)}
             className="w-full mt-2 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700 transition"
           >
-           Hadda Dalbo
+            Hadda Dalbo
           </button>
         ) : (
           <div className="w-full mt-2 py-1.5 text-xs text-center text-gray-400 border border-dashed rounded">
@@ -166,13 +126,10 @@ export default function HomePage() {
 
   return (
     <main className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-4">
-        
-      </h1>
+      <h1 className="text-3xl font-bold mb-4"></h1>
 
       <div className="flex flex-wrap gap-4 mb-6 items-end">
         <div>
-          
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value)}
@@ -209,13 +166,6 @@ export default function HomePage() {
           {products.map(product => renderProductCard(product))}
         </div>
       )}
-
-      <div ref={loadMoreRef} className="py-4 text-center">
-        {loadingMore && <p>Loading more products...</p>}
-        {!hasMore && products.length > 0 && (
-          <p className="text-gray-500">No more products</p>
-        )}
-      </div>
     </main>
   );
 }

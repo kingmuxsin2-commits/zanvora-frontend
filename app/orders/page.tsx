@@ -86,52 +86,60 @@ export default function CustomerOrdersPage() {
     }
   });
 
-  const renderOrderRow = (order: Order) => (
-    <tr key={order.id} className="border-b hover:bg-gray-50">
-      <td className="p-3 md:p-4 font-mono text-sm">{order.order_number}</td>
-      <td className="p-3 md:p-4 whitespace-nowrap">
-        {new Date(order.created_at).toLocaleDateString()}
-      </td>
-      <td className="p-3 md:p-4">
-        $
-        {typeof order.total_amount === 'string'
-          ? parseFloat(order.total_amount).toFixed(2)
-          : order.total_amount.toFixed(2)}
-      </td>
-      <td className="p-3 md:p-4 whitespace-nowrap">
-        <div className="flex items-center gap-2">
+  const renderOrderRow = (order: Order) => {
+    const numericAmount =
+      typeof order.total_amount === 'string'
+        ? parseFloat(order.total_amount)
+        : order.total_amount;
+
+    const formattedTotal = new Intl.NumberFormat('en-US', {
+      maximumFractionDigits: 0,
+    }).format(numericAmount);
+
+    return (
+      <tr key={order.id} className="border-b hover:bg-gray-50">
+        <td className="p-3 md:p-4 font-mono text-sm">{order.order_number}</td>
+        <td className="p-3 md:p-4 whitespace-nowrap">
+          {new Date(order.created_at).toLocaleDateString()}
+        </td>
+        <td className="p-3 md:p-4">
+          {formattedTotal} slsh
+        </td>
+        <td className="p-3 md:p-4 whitespace-nowrap">
+          <div className="flex items-center gap-2">
+            <span className={`px-2 py-1 rounded-full text-xs ${
+              order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+              order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+              order.status === 'shipped' ? 'bg-blue-100 text-blue-800' :
+              'bg-gray-100 text-gray-800'
+            }`}>
+              {order.status.replace('_', ' ')}
+            </span>
+            {order.status === 'delivered' && order.delivery_confirmed_at && (
+              <span className="text-green-600 text-xs" title="Delivery confirmed by you">✓</span>
+            )}
+          </div>
+        </td>
+        <td className="p-3 md:p-4 whitespace-nowrap">
           <span className={`px-2 py-1 rounded-full text-xs ${
-            order.status === 'delivered' ? 'bg-green-100 text-green-800' :
-            order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-            order.status === 'shipped' ? 'bg-blue-100 text-blue-800' :
-            'bg-gray-100 text-gray-800'
+            order.payment_status === 'paid' ? 'bg-green-100 text-green-800' :
+            order.payment_status === 'cancelled' ? 'bg-red-100 text-red-800' :
+            'bg-yellow-100 text-yellow-800'
           }`}>
-            {order.status.replace('_', ' ')}
+            {order.payment_status.replace('_', ' ')}
           </span>
-          {order.status === 'delivered' && order.delivery_confirmed_at && (
-            <span className="text-green-600 text-xs" title="Delivery confirmed by you">✓</span>
-          )}
-        </div>
-      </td>
-      <td className="p-3 md:p-4 whitespace-nowrap">
-        <span className={`px-2 py-1 rounded-full text-xs ${
-          order.payment_status === 'paid' ? 'bg-green-100 text-green-800' :
-          order.payment_status === 'cancelled' ? 'bg-red-100 text-red-800' :
-          'bg-yellow-100 text-yellow-800'
-        }`}>
-          {order.payment_status.replace('_', ' ')}
-        </span>
-      </td>
-      <td className="p-3 md:p-4">
-        <Link
-          href={`/order/status?orderId=${order.id}`}
-          className="text-indigo-600 hover:underline whitespace-nowrap"
-        >
-          View Details
-        </Link>
-      </td>
-    </tr>
-  );
+        </td>
+        <td className="p-3 md:p-4">
+          <Link
+            href={`/order/status?orderId=${order.id}`}
+            className="text-indigo-600 hover:underline whitespace-nowrap"
+          >
+            View Details
+          </Link>
+        </td>
+      </tr>
+    );
+  };
 
   const totalOrders = orders.length;
 
