@@ -160,6 +160,7 @@ function CustomerAnalytics() {
   const [cohortData, setCohortData] = useState<CohortData[]>([]);
   const [rfmData, setRfmData] = useState<RfmData | null>(null);
   const [ltvData, setLtvData] = useState<LtvData | null>(null);
+  const [regionData, setRegionData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -167,13 +168,15 @@ function CustomerAnalytics() {
       api.get('/admin/analytics'),
       api.get('/admin/analytics/cohort-retention'),
       api.get('/admin/analytics/rfm'),
-      api.get('/admin/analytics/ltv-distribution')
+      api.get('/admin/analytics/ltv-distribution'),
+      api.get('/admin/analytics/regions')
     ])
-      .then(([res1, res2, res3, res4]) => {
+      .then(([res1, res2, res3, res4, res5]) => {
         setData(res1.data);
         setCohortData(res2.data);
         setRfmData(res3.data);
         setLtvData(res4.data);
+        setRegionData(res5.data);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -264,6 +267,42 @@ function CustomerAnalytics() {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {regionData && (
+        <>
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-4">Top Regions by Orders</h2>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={Object.entries(regionData.top_regions).map(([region, count]) => ({ region, count }))}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="region" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#4F46E5" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-4">Monthly Orders by Region</h2>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={regionData.monthly_region_data}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" tickFormatter={(v) => new Date(v).toLocaleString('default', { month: 'short' })} />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  {Object.keys(regionData.top_regions).slice(0, 5).map((region, idx) => (
+                    <Line key={region} type="monotone" dataKey={region} stroke={`hsl(${idx * 60}, 70%, 50%)`} strokeWidth={2} />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="bg-white p-6 rounded-lg shadow overflow-x-auto">
         <h2 className="text-xl font-semibold mb-4">Cohort Retention (by Signup Month)</h2>

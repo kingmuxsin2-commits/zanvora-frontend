@@ -342,7 +342,7 @@ export default function AdminPaymentsPage() {
             </div>
           </div>
         </div>
-      )}
+      )} 
     </div>
   );
 }

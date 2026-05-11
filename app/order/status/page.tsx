@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 
@@ -33,7 +33,8 @@ const statusSteps = [
   { key: 'delivered', label: 'Delivered' },
 ];
 
-export default function OrderStatusPage() {
+// Inner component (actual logic)
+function StatusContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
@@ -52,7 +53,7 @@ export default function OrderStatusPage() {
   useEffect(() => {
     if (!hydrated) return;
 
-    // 🔐 Robust token retrieval – identical to payment page
+    // 🔐 Robust token retrieval
     let token = window.localStorage.getItem('auth_token');
     if (!token) token = window.sessionStorage.getItem('auth_token');
     if (!token) {
@@ -298,5 +299,14 @@ export default function OrderStatusPage() {
         ))}
       </div>
     </div>
+  );
+}
+
+// Outer wrapper with Suspense boundary (required for production build)
+export default function OrderStatusPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Loading order status…</div>}>
+      <StatusContent />
+    </Suspense>
   );
 }

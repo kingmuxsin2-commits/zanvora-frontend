@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getProduct, Product } from '@/lib/api/products';
 import { useCartStore } from '@/stores/cartStore';
@@ -41,8 +41,10 @@ export default function ProductPage() {
 
   // Image gallery state – carousel
   const [currentIndex, setCurrentIndex] = useState(0);
-  const touchStartX = useRef(0);
-  const touchEndX = useRef(0);
+
+  // Full‑screen image viewer state
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerImage, setViewerImage] = useState('');
 
   // Variant selection state
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
@@ -68,18 +70,9 @@ export default function ProductPage() {
     setCurrentIndex(prev => (prev - 1 + images.length) % images.length);
   };
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-  };
-  const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.touches[0].clientX;
-  };
-  const handleTouchEnd = () => {
-    const diff = touchStartX.current - touchEndX.current;
-    if (Math.abs(diff) > 50) {
-      if (diff > 0) nextImage();
-      else prevImage();
-    }
+  const openImageViewer = (imageUrl: string) => {
+    setViewerImage(imageUrl);
+    setViewerOpen(true);
   };
 
   useEffect(() => {
@@ -237,13 +230,11 @@ export default function ProductPage() {
   return (
     <div className="container mx-auto px-4 py-8 pb-24 md:pb-8">
       <div className="grid md:grid-cols-2 gap-8">
-        {/* Image Gallery – Carousel + Thumbnails */}
+        {/* Image Gallery – Carousel + Thumbnails + Tap to Enlarge */}
         <div className="space-y-2">
           <div
-            className="aspect-square relative bg-gray-100 rounded-lg overflow-hidden"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
+            className="aspect-square relative bg-gray-100 rounded-lg overflow-hidden cursor-pointer"
+            onClick={() => images.length > 0 && openImageViewer(getImageUrl(images[currentIndex]))}
           >
             {images.length > 0 ? (
               <img
@@ -262,13 +253,13 @@ export default function ProductPage() {
             {images.length > 1 && (
               <>
                 <button
-                  onClick={prevImage}
+                  onClick={(e) => { e.stopPropagation(); prevImage(); }}
                   className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-1 shadow"
                 >
                   <ChevronLeft size={20} />
                 </button>
                 <button
-                  onClick={nextImage}
+                  onClick={(e) => { e.stopPropagation(); nextImage(); }}
                   className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-1 shadow"
                 >
                   <ChevronRight size={20} />
@@ -278,13 +269,18 @@ export default function ProductPage() {
 
             {(product as any).video_url && (
               <button
-                onClick={() => setShowVideo(true)}
+                onClick={(e) => { e.stopPropagation(); setShowVideo(true); }}
                 className="absolute bottom-4 right-4 bg-black/70 text-white p-2 rounded-full hover:bg-black/90 transition"
                 title="Watch video"
               >
                 <Play size={20} />
               </button>
             )}
+
+            {/* Tap‑to‑enlarge hint */}
+            <div className="absolute bottom-2 left-2 bg-white/80 text-gray-600 text-xs px-2 py-1 rounded-full opacity-0 hover:opacity-100 transition-opacity">
+              🔍 Tap to enlarge
+            </div>
           </div>
 
           {/* Thumbnail Strip */}
@@ -306,6 +302,10 @@ export default function ProductPage() {
                     className="w-full h-full object-cover"
                     draggable={false}
                     onDragStart={(e) => e.preventDefault()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openImageViewer(getImageUrl(img));
+                    }}
                   />
                 </button>
               ))}
@@ -663,6 +663,27 @@ export default function ProductPage() {
               title="Product video"
             />
           </div>
+        </div>
+      )}
+
+      {/* Full‑Screen Image Viewer */}
+      {viewerOpen && (
+        <div
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+          onClick={() => setViewerOpen(false)}
+        >
+          <button
+            onClick={() => setViewerOpen(false)}
+            className="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
+          >
+            <X size={32} />
+          </button>
+          <img
+            src={viewerImage}
+            alt="Product image"
+            className="max-w-full max-h-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>

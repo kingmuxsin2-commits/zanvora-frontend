@@ -22,7 +22,7 @@ interface DeliveryFee {
 export default function CommissionPage() {
   const [activeTab, setActiveTab] = useState<'commission' | 'delivery'>('commission');
 
-  // ---------- Commission Tier states (your existing code) ----------
+  // ---------- Commission Tier states (unchanged) ----------
   const [tiers, setTiers] = useState<CommissionTier[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -86,14 +86,19 @@ export default function CommissionPage() {
     }
   };
 
-  // ---------- Delivery Fee states ----------
+  // ---------- Delivery Fee states (with string forms to avoid NaN) ----------
   const [fees, setFees] = useState<DeliveryFee[]>([]);
   const [loadingFees, setLoadingFees] = useState(true);
   const [editingFeeId, setEditingFeeId] = useState<number | null>(null);
-  const [editFee, setEditFee] = useState<Partial<DeliveryFee>>({});
+  const [editFee, setEditFee] = useState<{ degmo: string; xafad: string; price: string; is_active: boolean }>({
+    degmo: '',
+    xafad: '',
+    price: '',
+    is_active: true,
+  });
   const [savingFee, setSavingFee] = useState(false);
   const [showAddFee, setShowAddFee] = useState(false);
-  const [newFee, setNewFee] = useState({ xafad: '', degmo: '', price: 0 });
+  const [newFee, setNewFee] = useState({ degmo: '', xafad: '', price: '', is_active: true });
 
   const fetchFees = () => {
     api.get('/admin/delivery-fees')
@@ -107,14 +112,22 @@ export default function CommissionPage() {
 
   const handleEditFee = (fee: DeliveryFee) => {
     setEditingFeeId(fee.id);
-    setEditFee({ price: fee.price, is_active: fee.is_active });
+    setEditFee({
+      degmo: fee.degmo,
+      xafad: fee.xafad,
+      price: fee.price?.toString() || '',
+      is_active: fee.is_active,
+    });
   };
 
   const handleSaveFee = async () => {
     if (!editingFeeId) return;
     setSavingFee(true);
     try {
-      await api.put(`/admin/delivery-fees/${editingFeeId}`, editFee);
+      await api.put(`/admin/delivery-fees/${editingFeeId}`, {
+        ...editFee,
+        price: editFee.price === '' ? 0 : parseFloat(editFee.price),
+      });
       fetchFees();
       setEditingFeeId(null);
     } catch {
@@ -137,10 +150,15 @@ export default function CommissionPage() {
   const handleAddFee = async () => {
     setSavingFee(true);
     try {
-      await api.post('/admin/delivery-fees', newFee);
+      await api.post('/admin/delivery-fees', {
+        degmo: newFee.degmo,
+        xafad: newFee.xafad,
+        price: newFee.price === '' ? 0 : parseFloat(newFee.price),
+        is_active: newFee.is_active,
+      });
       fetchFees();
       setShowAddFee(false);
-      setNewFee({ xafad: '', degmo: '', price: 0 });
+      setNewFee({ degmo: '', xafad: '', price: '', is_active: true });
     } catch {
       alert('Failed to create');
     } finally {
@@ -168,7 +186,7 @@ export default function CommissionPage() {
         </button>
       </div>
 
-      {/* ============ Commission Tiers Tab ============ */}
+      {/* ============ Commission Tiers Tab (unchanged) ============ */}
       {activeTab === 'commission' && (
         <div>
           <div className="flex justify-between items-center mb-4">
@@ -257,7 +275,7 @@ export default function CommissionPage() {
             </div>
           )}
 
-          {/* Add Tier Modal (your existing code) */}
+          {/* Add Tier Modal (unchanged) */}
           {showAdd && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
               <div className="bg-white p-6 rounded-lg w-96">
@@ -307,13 +325,13 @@ export default function CommissionPage() {
         </div>
       )}
 
-      {/* ============ Delivery Fees Tab ============ */}
+      {/* ============ Delivery Fees Tab (UPDATED with string forms to fix NaN) ============ */}
       {activeTab === 'delivery' && (
         <div>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold">Delivery Fees</h2>
             <button onClick={() => setShowAddFee(true)} className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
-              + Add Fee
+              + Add Region
             </button>
           </div>
 
@@ -334,15 +352,33 @@ export default function CommissionPage() {
                 <tbody>
                   {fees.map(fee => (
                     <tr key={fee.id} className="border-b">
-                      <td className="p-4">{fee.degmo}</td>
-                      <td className="p-4">{fee.xafad}</td>
+                      <td className="p-4">
+                        {editingFeeId === fee.id ? (
+                          <input
+                            type="text"
+                            value={editFee.degmo}
+                            onChange={e => setEditFee({...editFee, degmo: e.target.value})}
+                            className="w-32 px-2 py-1 border rounded"
+                          />
+                        ) : fee.degmo}
+                      </td>
+                      <td className="p-4">
+                        {editingFeeId === fee.id ? (
+                          <input
+                            type="text"
+                            value={editFee.xafad}
+                            onChange={e => setEditFee({...editFee, xafad: e.target.value})}
+                            className="w-32 px-2 py-1 border rounded"
+                          />
+                        ) : fee.xafad}
+                      </td>
                       <td className="p-4">
                         {editingFeeId === fee.id ? (
                           <input
                             type="number"
                             step="0.01"
-                            value={editFee.price || ''}
-                            onChange={e => setEditFee({...editFee, price: parseFloat(e.target.value)})}
+                            value={editFee.price}
+                            onChange={e => setEditFee({...editFee, price: e.target.value})}
                             className="w-24 px-2 py-1 border rounded"
                           />
                         ) : `$${Number(fee.price).toFixed(2)}`}
@@ -351,7 +387,7 @@ export default function CommissionPage() {
                         {editingFeeId === fee.id ? (
                           <input
                             type="checkbox"
-                            checked={editFee.is_active || false}
+                            checked={editFee.is_active}
                             onChange={e => setEditFee({...editFee, is_active: e.target.checked})}
                           />
                         ) : fee.is_active ? '✅' : '❌'}
@@ -376,11 +412,11 @@ export default function CommissionPage() {
             </div>
           )}
 
-          {/* Add Delivery Fee Modal */}
+          {/* Add Region Modal – fixed to use string price to avoid NaN */}
           {showAddFee && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
               <div className="bg-white p-6 rounded-lg w-96">
-                <h2 className="text-xl font-bold mb-4">Add Delivery Fee</h2>
+                <h2 className="text-xl font-bold mb-4">Add Region</h2>
                 <div className="space-y-3">
                   <input
                     type="text"
@@ -401,14 +437,21 @@ export default function CommissionPage() {
                     step="0.01"
                     placeholder="Price (USD)"
                     value={newFee.price}
-                    onChange={e => setNewFee({...newFee, price: parseFloat(e.target.value)})}
+                    onChange={e => setNewFee({...newFee, price: e.target.value})}
                     className="w-full px-3 py-2 border rounded"
                   />
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={newFee.is_active}
+                      onChange={e => setNewFee({...newFee, is_active: e.target.checked})}
+                    /> Active
+                  </label>
                 </div>
                 <div className="flex justify-end gap-2 mt-4">
                   <button onClick={() => setShowAddFee(false)} className="px-4 py-2 border rounded">Cancel</button>
                   <button onClick={handleAddFee} disabled={savingFee} className="px-4 py-2 bg-indigo-600 text-white rounded">
-                    {savingFee ? 'Saving...' : 'Create'}
+                    {savingFee ? 'Saving...' : 'Add Region'}
                   </button>
                 </div>
               </div>

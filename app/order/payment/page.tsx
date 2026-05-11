@@ -1,9 +1,8 @@
 ﻿'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
-import { useAuthStore } from '@/stores/authStore';
 import { useCartStore } from '@/stores/cartStore';
 import { PhoneCall } from 'lucide-react';
 
@@ -15,7 +14,10 @@ interface Order {
   payment_status: string;
 }
 
-export default function PaymentPage() {
+/* ------------------------------------------------------------------ */
+/*  Inner component – the actual payment page logic                    */
+/* ------------------------------------------------------------------ */
+function PaymentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
@@ -35,7 +37,6 @@ export default function PaymentPage() {
   useEffect(() => {
     if (!hydrated) return;
 
-    // 🔐 Robust token retrieval (localStorage ➜ sessionStorage ➜ Zustand cache)
     let token = window.localStorage.getItem('auth_token');
     if (!token) token = window.sessionStorage.getItem('auth_token');
     if (!token) {
@@ -64,7 +65,6 @@ export default function PaymentPage() {
     })
       .then((res) => {
         setOrder(res.data);
-        // Clear cart as soon as we have the order
         clearCart();
       })
       .catch(() => router.push('/'))
@@ -90,6 +90,14 @@ export default function PaymentPage() {
     setTimeout(() => setCopied(null), 2000);
   };
 
+  useEffect(() => {
+    if (!claimed || !order) return;
+    const timer = setTimeout(() => {
+      router.push(`/order/status?orderId=${order.id}`);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [claimed, order, router]);
+
   if (!hydrated || loading) return <div className="p-8 text-center">Loading...</div>;
   if (!order) return <div className="p-8 text-center">Order not found</div>;
 
@@ -97,7 +105,7 @@ export default function PaymentPage() {
     ? parseFloat(order.total_amount)
     : order.total_amount;
   const formattedAmount = amount % 1 === 0 ? amount.toString() : amount.toFixed(2);
-  const ussdCode = `*220*4702443*${formattedAmount}#`;
+  const ussdCode = `*220*9204840*${formattedAmount}#`;
   const dialLink = `tel:${encodeURIComponent(ussdCode)}`;
 
   return (
@@ -155,16 +163,21 @@ export default function PaymentPage() {
             <p className="text-green-800">
               ✅ Mahadsanid! yara sug inta la xaqiijinayo.
             </p>
+            <p className="text-xs text-gray-500 mt-2">Waxaa laguu soo celinayaa bogga macluumaadka dalabka…</p>
           </div>
         )}
-
-        <button
-          onClick={() => router.push(`/order/status?orderId=${order.id}`)}
-          className="w-full text-indigo-600 hover:underline text-sm"
-        >
-          View Order Status
-        </button>
       </div>
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Default export with Suspense – fixes the prerender error           */
+/* ------------------------------------------------------------------ */
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Loading payment…</div>}>
+      <PaymentContent />
+    </Suspense>
   );
 }
