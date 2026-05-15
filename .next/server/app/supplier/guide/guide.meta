@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/supplier/layout,_N_T_/supplier/guide/layout,_N_T_/supplier/guide/guide/layout,_N_T_/supplier/guide/guide/page,_N_T_/supplier/guide/guide"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/supplier/guide/guide/__PAGE__",
+    "/supplier/guide/guide",
+    "/supplier/guide",
+    "/supplier",
+    "/_index",
+    "/_head"
+  ]
+}

@@ -1,0 +1,187 @@
+{
+  "app": {
+    "[project]/app/_not-found/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/admin/admins/admins/admins/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/admin/admins/admins/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/admin/admins/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/admin/analytics/analytics/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/admin/analytics/analytics/suppliers/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/admin/analytics/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/admin/analytics/products/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/admin/analytics/suppliers/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/admin/commission/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/admin/controls/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/admin/location/location/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/admin/location/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/admin/orders/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/admin/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/admin/payments/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/admin/products/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/admin/reports/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/admin/reports/reports/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/admin/suppliers/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/cart/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/checkout/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/login/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/order/payment/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/order/status/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/orders/orders/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/orders/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/product/[id]/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/register/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/supplier/analytics/analytics/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/supplier/analytics/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/supplier/earnings/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/supplier/guide/guide/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/supplier/guide/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/supplier/inventory/inventory/inventory/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/supplier/inventory/inventory/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/supplier/inventory/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/supplier/orders/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/supplier/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/supplier/pending/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/supplier/products/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/supplier/store/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/test-dynamic/[slug]/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ],
+    "[project]/app/test-payment/page": [
+      "static/media/caa3a2e1cccd8315-s.p.09~u27dqhyhd6.woff2",
+      "static/media/797e433ab948586e-s.p.09zddjkbdep5a.woff2"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pages": {},
+  "pagesUsingSizeAdjust": false
+}

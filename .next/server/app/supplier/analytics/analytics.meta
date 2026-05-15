@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/supplier/layout,_N_T_/supplier/analytics/layout,_N_T_/supplier/analytics/analytics/layout,_N_T_/supplier/analytics/analytics/page,_N_T_/supplier/analytics/analytics"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/supplier/analytics/analytics/__PAGE__",
+    "/supplier/analytics/analytics",
+    "/supplier/analytics",
+    "/supplier",
+    "/_index",
+    "/_head"
+  ]
+}
